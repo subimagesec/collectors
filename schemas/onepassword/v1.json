@@ -1,0 +1,125 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/subimagesec/collectors/main/schemas/onepassword/v1.json",
+  "title": "1Password metadata snapshot v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "collector", "provider", "account_id", "collected_at",
+    "snapshot_id", "scope", "status", "users", "groups", "group_memberships",
+    "vaults", "vault_user_grants", "vault_group_grants", "items"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "collector": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version"],
+      "properties": {
+        "name": {"const": "subimage-collectors"},
+        "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"}
+      }
+    },
+    "provider": {"const": "onepassword"},
+    "account_id": {"$ref": "#/$defs/id"},
+    "collected_at": {"type": "string", "format": "date-time"},
+    "snapshot_id": {"type": "string", "format": "uuid"},
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "vault_ids", "include_archived"],
+      "properties": {
+        "kind": {"const": "configured_vaults"},
+        "vault_ids": {
+          "type": "array", "minItems": 1, "uniqueItems": true,
+          "items": {"$ref": "#/$defs/id"}
+        },
+        "include_archived": {"const": true}
+      }
+    },
+    "status": {"const": "complete"},
+    "users": {"type": "array", "items": {"$ref": "#/$defs/user"}},
+    "groups": {"type": "array", "items": {"$ref": "#/$defs/group"}},
+    "group_memberships": {
+      "type": "array", "items": {"$ref": "#/$defs/membership"}
+    },
+    "vaults": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/vault"}},
+    "vault_user_grants": {"type": "array", "items": {"$ref": "#/$defs/user_grant"}},
+    "vault_group_grants": {"type": "array", "items": {"$ref": "#/$defs/group_grant"}},
+    "items": {"type": "array", "items": {"$ref": "#/$defs/item"}}
+  },
+  "$defs": {
+    "id": {"type": "string", "pattern": "^[a-z0-9]{26}$"},
+    "permissions": {
+      "type": "array", "uniqueItems": true,
+      "items": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"}
+    },
+    "user": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "name", "email", "state"],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "name": {"type": "string"},
+        "email": {"type": "string"},
+        "state": {"type": "string"},
+        "type": {"type": "string"}
+      }
+    },
+    "group": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "name"],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "name": {"type": "string"}
+      }
+    },
+    "membership": {
+      "type": "object", "additionalProperties": false,
+      "required": ["group_id", "user_id"],
+      "properties": {
+        "group_id": {"$ref": "#/$defs/id"},
+        "user_id": {"$ref": "#/$defs/id"}
+      }
+    },
+    "vault": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id"],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "name": {"type": "string"}
+      }
+    },
+    "user_grant": {
+      "type": "object", "additionalProperties": false,
+      "required": ["vault_id", "user_id", "permissions"],
+      "properties": {
+        "vault_id": {"$ref": "#/$defs/id"},
+        "user_id": {"$ref": "#/$defs/id"},
+        "permissions": {"$ref": "#/$defs/permissions"}
+      }
+    },
+    "group_grant": {
+      "type": "object", "additionalProperties": false,
+      "required": ["vault_id", "group_id", "permissions"],
+      "properties": {
+        "vault_id": {"$ref": "#/$defs/id"},
+        "group_id": {"$ref": "#/$defs/id"},
+        "permissions": {"$ref": "#/$defs/permissions"}
+      }
+    },
+    "item": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "vault_id"],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "vault_id": {"$ref": "#/$defs/id"},
+        "category": {"type": "string"},
+        "state": {"type": "string"},
+        "created_at": {"type": "string", "format": "date-time"},
+        "updated_at": {"type": "string", "format": "date-time"},
+        "version": {"type": "integer", "minimum": 0},
+        "title": {"type": "string"}
+      }
+    }
+  }
+}
