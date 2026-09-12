@@ -8,7 +8,7 @@ The manifest runs one collection daily at 02:00 UTC and writes a fixed S3 object
 
 1. Build and publish the collector image, then replace the placeholder with its full immutable digest. No official release is assumed. Match the image architecture to the cluster nodes.
 2. Replace the synthetic account and vault UUIDs. Add repeated `--vault-id` pairs for additional vaults. Replace the S3 bucket/key and set both `AWS_REGION` and `AWS_DEFAULT_REGION` to the bucket's region.
-3. Provision a private S3 bucket and a workload IAM role outside this manifest. The role needs `s3:PutObject` on exactly `arn:aws:s3:::<bucket>/onepassword/snapshot.json`. If the bucket uses a customer-managed KMS key, configure the required KMS permissions/key policy separately.
+3. Provision a private S3 bucket and a workload IAM role outside this manifest. The role needs `s3:PutObject` on exactly `arn:aws:s3:::<bucket>/<object-key>`, using the bucket and full object key from the manifest's configured `--output` URL. If the bucket uses a customer-managed KMS key, configure the required KMS permissions/key policy separately.
 4. Set up workload identity. The example service-account annotation uses [EKS IAM roles for service accounts](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html). Configure your cluster's OIDC provider and an IAM trust policy for the exact subject (`system:serviceaccount:subimage-collectors:onepassword-collector`) and audience (`sts.amazonaws.com`), and replace the role ARN. Other clusters need an equivalent supported AWS web-identity setup; the annotation alone does not create credentials or trust. Do not add static AWS access keys.
 5. Create the namespace and deliver a Secret named `onepassword-collector-token` with a `token` key into it, using your existing external secret-management process. The Secret must contain the already-validated unattended credential. Its payload is deliberately absent from this repository. Limit who can read it or create workloads in this namespace.
 6. Ensure the pod can resolve DNS and reach 1Password, AWS STS, and S3 over HTTPS. Ensure nodes can pull the image; configure registry authentication separately if needed.
@@ -20,7 +20,7 @@ kubectl apply --dry-run=server -f cronjob.yaml
 kubectl apply -f cronjob.yaml
 ```
 
-The manifest uses a nonroot process, a read-only container filesystem, dropped capabilities, and a memory-backed `/tmp` volume for CLI runtime files. It grants no Kubernetes API permissions. The environment token remains accessible to the process and privileged cluster administrators.
+The manifest uses a nonroot process, a read-only container filesystem, dropped capabilities, and a memory-backed `/tmp` volume for CLI runtime files. It disables [Kubernetes API token automounting](https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/) because the collector does not call the Kubernetes API. EKS IRSA separately injects a projected token with the `sts.amazonaws.com` audience for AWS authentication. The environment token remains accessible to the process and privileged cluster administrators.
 
 ## Run and verify
 

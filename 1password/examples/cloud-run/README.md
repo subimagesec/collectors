@@ -12,6 +12,10 @@ This Terraform root creates a Cloud Run v2 Job, a daily Cloud Scheduler trigger,
 - A published Linux AMD64 collector image available to Cloud Run, preferably in Artifact Registry in the same project. Cloud Run must have permission to pull it. Use the full immutable image digest; the placeholder is not a released image.
 - Your expected account UUID, explicit vault UUIDs, and a globally unique bucket name.
 
+The deploying identity also needs `iam.serviceAccounts.actAs` on both service accounts this example creates: `${name}-run` and `${name}-cron`. The `roles/iam.serviceAccountUser` role includes that permission. Arrange inherited project access or service-account bindings through your IAM administrator before creating the job and schedule; see the [Cloud Run service identity requirements](https://docs.cloud.google.com/run/docs/configuring/jobs/service-identity) and [Cloud Scheduler authentication requirements](https://docs.cloud.google.com/scheduler/docs/http-target-auth).
+
+Terraform checks bucket-name characters and length. Cloud Storage also checks availability, reserved names, and domain ownership for dotted names; see the [bucket naming requirements](https://docs.cloud.google.com/storage/docs/buckets#naming).
+
 ## Deploy
 
 Run from `1password/examples/cloud-run/` in the checkout:
@@ -46,7 +50,7 @@ gcloud run jobs execute onepassword-collector \
 
 Use your configured name/project/region if changed. Confirm the execution succeeded and inspect the configured GCS object using a separately authorized reader identity. Its `collected_at` should reflect the completed run. Monitor job failures and snapshot freshness: a successful scheduler request proves launch, not collection success.
 
-The default schedule is daily at 02:00 UTC, with a 30-minute execution timeout and no retries. Choose a schedule longer than collection time and avoid overlapping manual invocations. No downstream reader or Cartography importer is configured.
+The default schedule is daily at 02:00 UTC, with a 30-minute execution timeout and no retries. The `schedule` input accepts [Cloud Scheduler unix-cron or groc syntax](https://docs.cloud.google.com/scheduler/docs/configuring/cron-job-schedules), such as `0 2 * * *` or `every 48 hours`; the Cloud Scheduler API validates the expression. Choose a schedule longer than collection time and avoid overlapping manual invocations. No downstream reader or Cartography importer is configured.
 
 ## Configuration validation
 

@@ -19,6 +19,23 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  kubernetes:
+    name: Kubernetes schema
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Validate the Kubernetes 1.27 manifest
+        run: |
+          docker run --rm --read-only --user 65532:65532 \
+            --mount "type=bind,source=$GITHUB_WORKSPACE/1password/examples/kubernetes,target=/manifests,readonly" \
+            ghcr.io/yannh/kubeconform:v0.8.0@sha256:faffaf43f95aa6425306e1ab8d6fcad72acb9049158f38e574c085ea1ec0f64e \
+            -strict -summary -kubernetes-version 1.27.0 \
+            -schema-location 'https://raw.githubusercontent.com/yannh/kubernetes-json-schema/970cc70507e1880a7a3b64184b6aad417a1d8d85/{{.NormalizedKubernetesVersion}}-standalone{{.StrictSuffix}}/{{.ResourceKind}}{{.KindSuffix}}.json' \
+            /manifests/cronjob.yaml
+
   terraform:
     name: Terraform ${{ matrix.example }}
     runs-on: ubuntu-latest

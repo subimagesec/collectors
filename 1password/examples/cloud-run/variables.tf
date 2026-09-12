@@ -72,6 +72,16 @@ variable "op_secret_version" {
 variable "bucket_name" {
   type        = string
   description = "Globally unique name for a new private snapshot bucket."
+
+  validation {
+    condition = (
+      length(var.bucket_name) >= 3 &&
+      length(var.bucket_name) <= 222 &&
+      can(regex("^[a-z0-9][a-z0-9._-]*[a-z0-9]$", var.bucket_name)) &&
+      alltrue([for component in split(".", var.bucket_name) : length(component) <= 63])
+    )
+    error_message = "Use 3 to 63 lowercase letters, digits, hyphens, underscores, or dots, starting and ending with a letter or digit. Dotted names may have up to 222 characters, with each component at most 63 characters."
+  }
 }
 
 variable "output_object" {
@@ -87,7 +97,7 @@ variable "output_object" {
 
 variable "schedule" {
   type        = string
-  description = "Cloud Scheduler cron expression, evaluated in UTC."
+  description = "Cloud Scheduler unix-cron or groc schedule, evaluated in UTC."
   default     = "0 2 * * *"
 }
 

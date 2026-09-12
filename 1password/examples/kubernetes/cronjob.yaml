@@ -31,6 +31,7 @@ spec:
       template:
         spec:
           serviceAccountName: onepassword-collector
+          automountServiceAccountToken: false
           restartPolicy: Never
           securityContext:
             runAsNonRoot: true
