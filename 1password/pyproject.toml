@@ -11,7 +11,7 @@ requires-python = ">=3.12"
 license = "Apache-2.0"
 license-files = ["LICENSE"]
 authors = [{ name = "SubImage" }]
-dependencies = []
+dependencies = ["onepassword-sdk==0.4.1"]
 
 [project.urls]
 Homepage = "https://github.com/subimagesec/collectors"
