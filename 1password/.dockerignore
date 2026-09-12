@@ -5,6 +5,8 @@
 !uv.lock
 !README.md
 !LICENSE
+!third-party/
+!third-party/onepassword-sdk-LICENSE
 !src/
 !src/**
 src/**/__pycache__/
