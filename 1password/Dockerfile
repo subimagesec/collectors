@@ -15,10 +15,11 @@ LABEL org.opencontainers.image.source="https://github.com/subimagesec/collectors
       org.opencontainers.image.description="Customer-operated 1Password metadata collection for Cartography"
 COPY --from=onepassword /usr/local/bin/op /usr/local/bin/op
 COPY --from=build /opt/collector/.venv /opt/collector/.venv
-COPY --chmod=0644 third-party/onepassword-sdk-LICENSE /usr/share/licenses/onepassword-sdk/LICENSE
 RUN groupadd --gid 10001 collector \
     && useradd --uid 10001 --gid 10001 --create-home --shell /usr/sbin/nologin collector \
-    && install -d -o collector -g collector /data
+    && install -d -o collector -g collector /data \
+    && install -d -m 0755 /usr/share/licenses/onepassword-sdk
+COPY --chmod=0644 third-party/onepassword-sdk-LICENSE /usr/share/licenses/onepassword-sdk/LICENSE
 ENV PATH="/opt/collector/.venv/bin:${PATH}" \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
