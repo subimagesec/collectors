@@ -50,12 +50,14 @@ For Google Cloud Storage, install `--extra gcp` and use `gs://example-collector-
 
 ## Run in a container
 
-The Docker image bundles the collector, the official 1Password CLI, and both cloud upload dependencies. Build it from the `1password/` directory:
+The Docker image bundles the collector, the official 1Password CLI and Python SDK, and both cloud upload dependencies. Build it from the `1password/` directory:
 
 ```sh
 docker build -t onepassword-collector:local .
 docker run --rm onepassword-collector:local --help
 ```
+
+Run as the image's configured user (UID/GID `10001:10001`) and make any output volume writable by that user. The 1Password CLI requires a matching Unix user entry; overriding the container user with an arbitrary numeric UID can prevent authentication.
 
 Component releases use tags such as `1password/v0.1.0` and publish to `ghcr.io/subimagesec/collectors/1password`. Until a release is available, publish your reviewed build to a registry you control. Use its immutable image digest for deployment. Containerized CLI authentication is separate from your desktop session; a successful local desktop run does not prove that an unattended token will work.
 
