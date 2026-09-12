@@ -61,6 +61,16 @@ Component releases use tags such as `1password/v0.1.0` and publish to `ghcr.io/s
 
 Maintainers create release tags from `main`. The release workflow verifies that the tagged commit is on `main`, its version matches `pyproject.toml`, and Python/container checks pass before publishing. Release tags cannot be moved or deleted.
 
+## Schedule collection
+
+After validating authentication, read the [deployment guide](docs/deployment.md) and choose an example:
+
+| Runtime | Output | Example |
+| --- | --- | --- |
+| Cloud Run Job + Cloud Scheduler | GCS | [Terraform](examples/cloud-run/README.md) |
+| ECS Fargate + EventBridge Scheduler | S3 | [Terraform](examples/ecs/README.md) |
+| Kubernetes CronJob | S3 | [Manifest](examples/kubernetes/README.md) |
+
 ## Development
 
 ```sh

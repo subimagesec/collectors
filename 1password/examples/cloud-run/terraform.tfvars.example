@@ -1,0 +1,9 @@
+project_id = "example-security-project"
+region     = "us-central1"
+
+collector_image   = "us-central1-docker.pkg.dev/example-security-project/collectors/1password@sha256:0000000000000000000000000000000000000000000000000000000000000000"
+account_id        = "aaaaaaaaaaaaaaaaaaaaaaaaaa"
+vault_ids         = ["bbbbbbbbbbbbbbbbbbbbbbbbbb"]
+op_secret_id      = "onepassword-collector-token"
+op_secret_version = "1"
+bucket_name       = "example-collector-snapshots-replace-me"
