@@ -49,8 +49,10 @@ jobs:
             --tmpfs /tmp:rw,noexec,nosuid,size=64m \
             --env HOME=/tmp --env OP_CONFIG_DIR=/tmp/op \
             --entrypoint python onepassword-collector:ci -c '
+          from pathlib import Path
           from onepassword.core import UniffiCore
           from onepassword_collector.onepassword import OpClient
+          assert "Copyright (c) 2024 1Password" in Path("/usr/share/licenses/onepassword-sdk/LICENSE").read_text()
           UniffiCore()
           assert OpClient("op").read(["account", "list"], "offline CLI compatibility") == []
           '
