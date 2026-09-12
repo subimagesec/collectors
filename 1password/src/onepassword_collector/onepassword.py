@@ -125,12 +125,12 @@ class OpClient:
 
 
 def _user(identifier: str, raw: dict[str, Any]) -> dict[str, str]:
-    user = {
-        "id": identifier,
-        "name": _text(raw.get("name"), "user name", allow_empty=True),
-        "email": _text(raw.get("email"), "user email"),
-        "state": _text(raw.get("state"), "user state"),
-    }
+    user = {"id": identifier}
+    for field in ("name", "email", "state"):
+        if field in raw or raw.get("type") != "SERVICE_ACCOUNT":
+            user[field] = _text(
+                raw.get(field), f"user {field}", allow_empty=field == "name"
+            )
     if "type" in raw:
         user["type"] = _text(raw["type"], "user type")
     return user
