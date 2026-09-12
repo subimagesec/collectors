@@ -2,7 +2,7 @@
 
 This Terraform root creates a one-shot Fargate task, a daily EventBridge Scheduler trigger, a private S3 bucket, runtime/execution/scheduler IAM roles, and a CloudWatch log group. It uses your existing VPC/subnets and references an existing Secrets Manager secret version.
 
-**First validate the exact unattended credential.** Generic 1Password service-account-token support has not been established, and item-read permission alone is insufficient. User/group enumeration, memberships, and vault grants must work too. Read [authentication requirements](../../docs/authentication.md) before provisioning.
+Use a 1Password service account with **Read Items** access to the intended vaults. Validate a complete local snapshot with the exact token and image before scheduling this example. Read the [authentication requirements](../../docs/authentication.md) before provisioning.
 
 ## Prerequisites
 

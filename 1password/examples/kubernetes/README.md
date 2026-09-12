@@ -2,7 +2,7 @@
 
 The manifest runs one collection daily at 02:00 UTC and writes a fixed S3 object. It includes a namespace, service account, and CronJob. Kubernetes 1.27+ is required for the `timeZone` field.
 
-**Validate the exact unattended 1Password credential first.** A generic service account token is not established as compatible. The collector requires account/user/group discovery, membership and vault grants, and item listing; a token that can only read items will fail. See [authentication requirements](../../docs/authentication.md).
+Use a 1Password service account with **Read Items** access to the intended vaults. Validate a complete local snapshot with the exact token and image before scheduling this example. See the [authentication requirements](../../docs/authentication.md).
 
 ## Configure before applying
 

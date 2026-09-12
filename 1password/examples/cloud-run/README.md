@@ -2,7 +2,7 @@
 
 This Terraform root creates a Cloud Run v2 Job, a daily Cloud Scheduler trigger, a private GCS bucket, and separate runtime/scheduler service accounts. It references an existing Secret Manager secret version. It does not create or read the token payload.
 
-**First validate the exact unattended credential.** Generic 1Password service-account-token support has not been established, and the collector requires user/group enumeration and vault grants in addition to item access. Read [authentication requirements](../../docs/authentication.md) before provisioning this example.
+Use a 1Password service account with **Read Items** access to the intended vaults. Validate a complete local snapshot with the exact token and image before scheduling this example. Read the [authentication requirements](../../docs/authentication.md) before provisioning.
 
 ## Prerequisites
 

@@ -1,6 +1,6 @@
 # Deployment
 
-**Validate the exact unattended credential before deployment.** Generic 1Password service-account-token compatibility has not been established. Follow the [authentication guide](authentication.md), including its required access-metadata operations and explicit account/vault scope.
+Use a 1Password service account with **Read Items** access to the intended vaults. Validate a complete local snapshot with the exact token and image before scheduling collection. Follow the [authentication guide](authentication.md), including its required metadata operations and explicit account/vault scope.
 
 ## Supply secrets without putting them in Terraform state
 
