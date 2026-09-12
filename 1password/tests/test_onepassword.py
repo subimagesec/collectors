@@ -338,20 +338,37 @@ def test_scope_must_be_explicit_unique_vault_ids(transport, vault_ids):
 
 
 @pytest.mark.parametrize(
-    "identity",
+    "identity, message",
     [
-        {},
-        {"account_uuid": ACCOUNT},
-        {"account_uuid": OTHER_ID, "user_uuid": USER},
-        {"account_uuid": [ACCOUNT], "user_uuid": USER},
+        ({}, "A valid 26-character 1Password ID is required"),
+        (
+            {"account_uuid": ACCOUNT},
+            "A valid 26-character 1Password ID is required",
+        ),
+        (
+            {
+                "account_uuid": OTHER_ID,
+                "user_uuid": USER,
+                "user_type": "SERVICE_ACCOUNT",
+            },
+            "The authenticated 1Password account does not match",
+        ),
+        (
+            {
+                "account_uuid": [ACCOUNT],
+                "user_uuid": USER,
+                "user_type": "SERVICE_ACCOUNT",
+            },
+            "A valid 26-character 1Password ID is required",
+        ),
     ],
 )
 def test_missing_or_mismatched_account_identity_fails_before_inventory(
-    transport, identity
+    transport, identity, message
 ):
     responses, calls = transport
     responses[("whoami",)] = identity
-    with pytest.raises(CollectorError):
+    with pytest.raises(CollectorError, match=message):
         collect([VAULT], account_id=ACCOUNT)
     assert len(calls) == 1
 
@@ -501,13 +518,12 @@ def test_service_account_membership_metadata_closes_sdk_user_reference(transport
     assert CANARY not in json.dumps(snapshot)
 
 
-@pytest.mark.parametrize("field", ["name", "email", "state", "type"])
-def test_missing_service_account_members_require_complete_identity(transport, field):
+def test_new_group_member_requires_explicit_service_account_type(transport):
     responses, _ = transport
     member = service_account_metadata()
-    member.pop(field)
+    member.pop("type")
     responses[("group", "user", "list", GROUP)].append(member)
-    with pytest.raises(CollectorError):
+    with pytest.raises(CollectorError, match="missing from the user list"):
         collect([VAULT], account_id=ACCOUNT)
 
 
@@ -614,3 +630,86 @@ def test_whoami_must_identify_the_authenticated_service_account(transport, user_
     with pytest.raises(CollectorError, match="must be a service account"):
         collect([VAULT], account_id=ACCOUNT)
     assert len(calls) == 1
+
+
+def add_user_record(responses, source, record):
+    if source == "directory":
+        responses[("user", "list")].append(record)
+        return
+    if source == "membership":
+        responses[("group", "user", "list", GROUP)].append(record)
+    else:
+        responses[("user", "get", OTHER_ID)] = record
+    responses[("sdk", "vault", "get", VAULT)]["access"].append(
+        {
+            "vault_uuid": VAULT,
+            "accessor_type": "user",
+            "accessor_uuid": OTHER_ID,
+            "permissions": 32,
+        }
+    )
+
+
+@pytest.mark.parametrize("source", ["directory", "membership", "lookup"])
+@pytest.mark.parametrize(
+    "metadata",
+    [
+        {},
+        {"name": "Example Service"},
+        {"email": "service@example.com"},
+        {"state": "ACTIVE"},
+    ],
+)
+def test_sparse_service_account_metadata_preserves_only_observed_fields(
+    transport, source, metadata
+):
+    responses, _ = transport
+    expected = {"id": OTHER_ID, "type": "SERVICE_ACCOUNT", **metadata}
+    add_user_record(responses, source, {**expected, "notes": CANARY})
+
+    snapshot = collect([VAULT], account_id=ACCOUNT)
+
+    assert (
+        next(user for user in snapshot["users"] if user["id"] == OTHER_ID) == expected
+    )
+    assert CANARY not in json.dumps(snapshot)
+
+
+@pytest.mark.parametrize("source", ["directory", "membership", "lookup"])
+@pytest.mark.parametrize("metadata", [{"name": None}, {"email": ""}, {"state": {}}])
+def test_present_service_account_metadata_is_still_validated(
+    transport, source, metadata
+):
+    responses, _ = transport
+    add_user_record(
+        responses, source, {"id": OTHER_ID, "type": "SERVICE_ACCOUNT", **metadata}
+    )
+    with pytest.raises(CollectorError, match="invalid user"):
+        collect([VAULT], account_id=ACCOUNT)
+
+
+@pytest.mark.parametrize("source", ["directory", "lookup"])
+@pytest.mark.parametrize("field", ["name", "email", "state"])
+def test_ordinary_user_metadata_remains_required(transport, source, field):
+    responses, _ = transport
+    user = {
+        "id": OTHER_ID,
+        "type": "USER",
+        "name": "Example User",
+        "email": "user@example.com",
+        "state": "ACTIVE",
+    }
+    user.pop(field)
+    add_user_record(responses, source, user)
+    with pytest.raises(CollectorError, match=f"invalid user {field}"):
+        collect([VAULT], account_id=ACCOUNT)
+
+
+def test_sparse_directory_identity_agrees_with_authenticated_service_account(transport):
+    responses, _ = transport
+    identity = {"id": AUTHENTICATED_SERVICE_ACCOUNT, "type": "SERVICE_ACCOUNT"}
+    responses[("user", "list")].append(identity)
+
+    snapshot = collect([VAULT], account_id=ACCOUNT)
+
+    assert snapshot["users"][0] == identity
