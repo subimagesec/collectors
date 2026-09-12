@@ -17,7 +17,7 @@
 
 The collector fails when a required command is unsupported, denied, or returns an unexpected shape. It does not silently fall back to an item-only inventory. A local authenticated CLI user session is a starting point for validation, but this repository has not established that a generic service account token can run the complete workflow unattended.
 
-Read the official [CLI authentication guide](https://developer.1password.com/docs/cli/sign-in/), [service account documentation](https://developer.1password.com/docs/service-accounts/), and [CLI command reference](https://developer.1password.com/docs/cli/reference/). Determine the minimum permissions that actually satisfy the read operations in your account. The collector never creates a credential or grants access.
+Read the official [CLI authentication guide](https://www.1password.dev/cli/app-integration), [service account documentation](https://developer.1password.com/docs/service-accounts/), and [CLI command reference](https://developer.1password.com/docs/cli/reference/). Determine the minimum permissions that actually satisfy the read operations in your account. The collector never creates a credential or grants access.
 
 For unattended use, first run the collector with the exact credential and CLI version you plan to use, in your own environment, and verify that it produces a complete local snapshot. Setting `OP_SERVICE_ACCOUNT_TOKEN` alone does not establish compatibility. If the credential cannot enumerate users, groups, memberships, or vault grants, unattended collection is not ready. An interactive session should not be copied into a scheduled job as a presumed long-lived credential.
 
