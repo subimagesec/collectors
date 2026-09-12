@@ -83,3 +83,5 @@ make test
 The Python distribution is `subimage-collector-onepassword`; its module is `onepassword_collector`. `make test` runs lint and the full test suite. Tests use synthetic provider responses. Passing tests do not establish live support for a particular 1Password account or credential.
 
 Collector code is licensed under [Apache 2.0](LICENSE). The image also bundles the official 1Password CLI, which is distributed under [1Password's terms](https://1password.com/legal/terms-of-service/); see its [CLI documentation](https://developer.1password.com/docs/cli/).
+
+The bundled Python SDK is [MIT-licensed](third-party/onepassword-sdk-LICENSE). Use of 1Password APIs and services is governed by the [1Password API Terms of Service](https://1password.com/legal/api-sdk-terms-of-service).
