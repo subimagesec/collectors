@@ -13,6 +13,7 @@ from onepassword_collector import cli
 ACCOUNT = "a" * 26
 VAULT = "v" * 26
 USER = "u" * 26
+SERVICE_ACCOUNT = "c" * 26
 GROUP = "g" * 26
 ITEM = "i" * 26
 CANARY = "synthetic-secret-must-not-leave-process"
@@ -21,7 +22,11 @@ CANARY = "synthetic-secret-must-not-leave-process"
 @pytest.fixture
 def collector_process(tmp_path):
     responses = {
-        "whoami": {"account_uuid": ACCOUNT, "user_uuid": USER},
+        "whoami": {
+            "account_uuid": ACCOUNT,
+            "user_uuid": SERVICE_ACCOUNT,
+            "user_type": "SERVICE_ACCOUNT",
+        },
         "vault list": [{"id": VAULT, "name": "Example vault"}],
         "user list": [
             {
@@ -33,10 +38,30 @@ def collector_process(tmp_path):
         ],
         "group list": [{"id": GROUP, "name": "Example group"}],
         f"group user list {GROUP}": [{"id": USER}],
-        f"vault user list {VAULT}": [{"id": USER, "permissions": ["view_items"]}],
-        f"vault group list {VAULT}": [
-            {"id": GROUP, "permissions": "view_items,manage_vault"}
-        ],
+        f"sdk vault get {VAULT}": {
+            "id": VAULT,
+            "title": CANARY,
+            "access": [
+                {
+                    "vault_uuid": VAULT,
+                    "accessor_uuid": USER,
+                    "accessor_type": "user",
+                    "permissions": 32,
+                },
+                {
+                    "vault_uuid": VAULT,
+                    "accessor_uuid": SERVICE_ACCOUNT,
+                    "accessor_type": "user",
+                    "permissions": 48,
+                },
+                {
+                    "vault_uuid": VAULT,
+                    "accessor_uuid": GROUP,
+                    "accessor_type": "group",
+                    "permissions": 34,
+                },
+            ],
+        },
         f"item list --vault={VAULT} --include-archive": [
             {
                 "id": ITEM,
@@ -58,7 +83,7 @@ def collector_process(tmp_path):
         "import json, os, sys\n"
         "from pathlib import Path\n"
         "flags = {'--format=json', '--iso-timestamps', '--cache=false', "
-        "'--no-color', '--encoding=UTF-8'}\n"
+        "'--no-color'}\n"
         "command = ' '.join(arg for arg in sys.argv[1:] if arg not in flags)\n"
         "data = json.loads(Path(os.environ['COLLECTOR_TEST_RESPONSES']).read_text())\n"
         "if command == os.environ.get('COLLECTOR_TEST_FAILURE'):\n"
@@ -75,6 +100,7 @@ def collector_process(tmp_path):
     }
     environment["COLLECTOR_TEST_RESPONSES"] = str(responses_path)
     environment["OP_SERVICE_ACCOUNT_TOKEN"] = CANARY
+    environment["PYTHONPATH"] = str(Path(__file__).parent / "fakes")
     target = tmp_path / "snapshot.json"
 
     def run(*, failure=None, account_id=ACCOUNT, include_titles=False):
@@ -126,8 +152,9 @@ def test_complete_command_publishes_valid_schema_without_secret_fields(
     assert snapshot["scope"]["vault_ids"] == [VAULT]
     assert snapshot["vault_group_grants"][0]["permissions"] == [
         "manage_vault",
-        "view_items",
+        "read_items",
     ]
+    assert snapshot["vault_group_grants"][0]["permissions_bitmask"] == 34
 
 
 @pytest.mark.parametrize(
@@ -138,8 +165,8 @@ def test_complete_command_publishes_valid_schema_without_secret_fields(
         "user list",
         "group list",
         f"group user list {GROUP}",
-        f"vault user list {VAULT}",
-        f"vault group list {VAULT}",
+        "sdk authenticate",
+        f"sdk vault get {VAULT}",
         f"item list --vault={VAULT} --include-archive",
     ],
 )
