@@ -43,6 +43,17 @@ jobs:
           docker run --rm --network none --read-only --tmpfs /tmp:rw,noexec,nosuid,size=64m onepassword-collector:ci --help
           docker run --rm --network none --read-only --tmpfs /tmp:rw,noexec,nosuid,size=64m --entrypoint op onepassword-collector:ci --version
           docker run --rm --network none --read-only --entrypoint python onepassword-collector:ci -c 'import boto3; from google.cloud import storage'
+      - name: Check CLI runtime flags and SDK native dependencies
+        run: |
+          docker run --rm --network none --read-only \
+            --tmpfs /tmp:rw,noexec,nosuid,size=64m \
+            --env HOME=/tmp --env OP_CONFIG_DIR=/tmp/op \
+            --entrypoint python onepassword-collector:ci -c '
+          from onepassword.core import UniffiCore
+          from onepassword_collector.onepassword import OpClient
+          UniffiCore()
+          assert OpClient("op").read(["account", "list"], "offline CLI compatibility") == []
+          '
       - name: Reject missing collector configuration
         run: |
           set +e
