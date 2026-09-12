@@ -48,6 +48,19 @@ For Google Cloud Storage, install `--extra gcp` and use `gs://example-collector-
 - The collector uses metadata listing commands and an explicit output schema. It does not fetch item contents, export secret values, modify access, or infer secret-read permission from vault ownership/management alone.
 - A collection failure does not publish a partial snapshot or replace an existing output. A successful run replaces the selected file or object with one complete snapshot. A publication failure returns a nonzero exit status.
 
+## Run in a container
+
+The Docker image bundles the collector, the official 1Password CLI, and both cloud upload dependencies. Build it from the `1password/` directory:
+
+```sh
+docker build -t onepassword-collector:local .
+docker run --rm onepassword-collector:local --help
+```
+
+Component releases use tags such as `1password/v0.1.0` and publish to `ghcr.io/subimagesec/collectors/1password`. Until a release is available, publish your reviewed build to a registry you control. Use its immutable image digest for deployment. Containerized CLI authentication is separate from your desktop session; a successful local desktop run does not prove that an unattended token will work.
+
+Maintainers create release tags from `main`. The release workflow verifies that the tagged commit is on `main`, its version matches `pyproject.toml`, and Python/container checks pass before publishing. Release tags cannot be moved or deleted.
+
 ## Development
 
 ```sh
@@ -57,4 +70,4 @@ make test
 
 The Python distribution is `subimage-collector-onepassword`; its module is `onepassword_collector`. `make test` runs lint and the full test suite. Tests use synthetic provider responses. Passing tests do not establish live support for a particular 1Password account or credential.
 
-Collector code is licensed under [Apache 2.0](LICENSE).
+Collector code is licensed under [Apache 2.0](LICENSE). The image also bundles the official 1Password CLI, which is distributed under [1Password's terms](https://1password.com/legal/terms-of-service/); see its [CLI documentation](https://developer.1password.com/docs/cli/).

@@ -1,0 +1,52 @@
+name: 1Password container
+
+on:
+  pull_request:
+    paths:
+      - "1password/**"
+      - ".github/workflows/container.yml"
+      - ".github/workflows/release.yml"
+  push:
+    branches: [main]
+    paths:
+      - "1password/**"
+      - ".github/workflows/container.yml"
+      - ".github/workflows/release.yml"
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: onepassword-container-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  container:
+    name: Container
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
+      - uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        with:
+          context: ./1password
+          load: true
+          push: false
+          tags: onepassword-collector:ci
+      - name: Smoke test the nonroot container
+        run: |
+          test "$(docker image inspect onepassword-collector:ci --format '{{.Config.User}}')" = "10001:10001"
+          docker run --rm --network none --read-only --tmpfs /tmp:rw,noexec,nosuid,size=64m onepassword-collector:ci --help
+          docker run --rm --network none --read-only --tmpfs /tmp:rw,noexec,nosuid,size=64m --entrypoint op onepassword-collector:ci --version
+          docker run --rm --network none --read-only --entrypoint python onepassword-collector:ci -c 'import boto3; from google.cloud import storage'
+      - name: Reject missing collector configuration
+        run: |
+          set +e
+          docker run --rm --network none --read-only --tmpfs /tmp:rw,noexec,nosuid,size=64m onepassword-collector:ci
+          collector_status=$?
+          set -e
+          test "$collector_status" -eq 2
