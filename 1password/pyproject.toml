@@ -1,0 +1,41 @@
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "subimage-collector-onepassword"
+version = "0.1.0"
+description = "Customer-run 1Password metadata collector for Cartography"
+readme = "README.md"
+requires-python = ">=3.12"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+authors = [{ name = "SubImage" }]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/subimagesec/collectors"
+Issues = "https://github.com/subimagesec/collectors/issues"
+
+[project.scripts]
+onepassword-collector = "onepassword_collector.cli:main"
+
+[project.optional-dependencies]
+aws = ["boto3>=1.40,<2"]
+gcp = ["google-cloud-storage>=3.3,<4"]
+
+[dependency-groups]
+dev = ["pytest>=8.4,<10", "jsonschema>=4.25,<5", "ruff==0.15.12"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/onepassword_collector"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+
+[tool.ruff]
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
