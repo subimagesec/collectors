@@ -31,3 +31,18 @@ updates:
       all-python:
         patterns:
           - "*"
+  - package-ecosystem: "docker"
+    directory: "/1password"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: "chore: "
+    open-pull-requests-limit: 1
+    labels:
+      - "dependencies"
+    groups:
+      all-images:
+        patterns:
+          - "*"
