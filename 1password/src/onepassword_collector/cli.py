@@ -34,7 +34,6 @@ def parser() -> argparse.ArgumentParser:
         required=True,
         help="Local file path, s3://bucket/key, or gs://bucket/key",
     )
-    result.add_argument("--account", help="Optional 1Password CLI account selector")
     result.add_argument(
         "--include-titles",
         action="store_true",
@@ -53,7 +52,6 @@ def main(argv: list[str] | None = None) -> int:
             args.vault_id,
             account_id=args.account_id,
             op_path=args.op_path,
-            account=args.account,
             include_titles=args.include_titles,
         )
         data = (

@@ -54,9 +54,16 @@
       "type": "array", "uniqueItems": true,
       "items": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"}
     },
+    "permissions_bitmask": {
+      "type": "integer", "minimum": 0, "maximum": 4294967295
+    },
     "user": {
       "type": "object", "additionalProperties": false,
-      "required": ["id", "name", "email", "state"],
+      "required": ["id"],
+      "anyOf": [
+        {"required": ["name", "email", "state"]},
+        {"required": ["type"], "properties": {"type": {"const": "SERVICE_ACCOUNT"}}}
+      ],
       "properties": {
         "id": {"$ref": "#/$defs/id"},
         "name": {"type": "string"},
@@ -91,20 +98,22 @@
     },
     "user_grant": {
       "type": "object", "additionalProperties": false,
-      "required": ["vault_id", "user_id", "permissions"],
+      "required": ["vault_id", "user_id", "permissions", "permissions_bitmask"],
       "properties": {
         "vault_id": {"$ref": "#/$defs/id"},
         "user_id": {"$ref": "#/$defs/id"},
-        "permissions": {"$ref": "#/$defs/permissions"}
+        "permissions": {"$ref": "#/$defs/permissions"},
+        "permissions_bitmask": {"$ref": "#/$defs/permissions_bitmask"}
       }
     },
     "group_grant": {
       "type": "object", "additionalProperties": false,
-      "required": ["vault_id", "group_id", "permissions"],
+      "required": ["vault_id", "group_id", "permissions", "permissions_bitmask"],
       "properties": {
         "vault_id": {"$ref": "#/$defs/id"},
         "group_id": {"$ref": "#/$defs/id"},
-        "permissions": {"$ref": "#/$defs/permissions"}
+        "permissions": {"$ref": "#/$defs/permissions"},
+        "permissions_bitmask": {"$ref": "#/$defs/permissions_bitmask"}
       }
     },
     "item": {

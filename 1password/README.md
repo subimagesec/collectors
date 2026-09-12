@@ -6,13 +6,13 @@ The collector runs where you control the 1Password credential. It publishes only
 
 ## 1Password authentication comes first
 
-The credential must support account identification, user and group enumeration, group membership, vault user/group grants, and item listing for every configured vault. A token that can read items is not necessarily able to read this access information. **Generic 1Password service-account-token compatibility has not been established.** The collector exits with an error if a required command is unavailable or unauthorized.
+Set `OP_SERVICE_ACCOUNT_TOKEN` to a 1Password service account token scoped to the intended vaults with **Read Items** access. The collector uses that token with the official CLI for inventory and the official Python SDK for authoritative user/group vault grants. It requires the token even if a desktop CLI user session is available.
 
-Start with an authenticated [1Password CLI](https://developer.1password.com/docs/cli/) user session whose permissions cover these operations. Validate an unattended credential locally before scheduling collection. This collector does not grant permissions or bypass 1Password's credential restrictions. See the [authentication guide](docs/authentication.md).
+Full local collection was validated with **1Password CLI 2.32.1** and **Python SDK 0.4.1** using this permission scope. Follow the [service account setup and validation guide](docs/authentication.md) for your intended deployment before scheduling collection. The collector does not grant permissions, and fails if required reads are unavailable or unauthorized.
 
 ## Run locally
 
-Requirements: Python 3.12+, [uv](https://docs.astral.sh/uv/), and the official 1Password CLI on `PATH`.
+Requirements: Python 3.12+, [uv](https://docs.astral.sh/uv/), the official [1Password CLI](https://developer.1password.com/docs/cli/) on `PATH`, and `OP_SERVICE_ACCOUNT_TOKEN` injected through your approved secret-handling method. `uv sync` installs the official Python SDK dependency. Keep the token out of shell history and tracked files.
 
 ```sh
 git clone https://github.com/subimagesec/collectors.git
@@ -26,7 +26,7 @@ uv run onepassword-collector \
   --output output/onepassword.json
 ```
 
-Replace the example UUIDs with your account UUID and the vault UUIDs to collect. `op whoami --format=json` identifies the signed-in account; `op vault list --format=json` lists vaults accessible to that session. Repeat `--vault-id` for each vault. Use `--account <account-selector>` when selecting a particular CLI account; `--account-id` independently checks that the selected account is the expected one.
+Replace the example UUIDs with your account UUID and the vault UUIDs to collect. With the same token, `op whoami --format=json` identifies the account and `op vault list --format=json` lists accessible vaults. Repeat `--vault-id` for each vault; `--account-id` independently checks the expected account. Newly created vaults are not automatically added to the token or collection scope.
 
 `--output` is required. To upload with the cloud SDK's normal credential chain:
 
@@ -44,8 +44,8 @@ For Google Cloud Storage, install `--extra gcp` and use `gs://example-collector-
 
 - Coverage is limited to the explicitly configured vaults. It is not a claim of account-wide vault coverage.
 - Archived items are included. The snapshot records its vault scope, collection time, and schema version; see the [format and ingestion contract](docs/format.md) and [JSON schema](schemas/v1.json).
-- User names, email addresses, group names, and group memberships are included. Vault names and item titles are omitted unless you pass `--include-titles`. Titles can contain sensitive free text. Keep the output private; the local `output/` directory is gitignored.
-- The collector uses metadata listing commands and an explicit output schema. It does not fetch item contents, export secret values, modify access, or infer secret-read permission from vault ownership/management alone.
+- User names, email addresses, and states are included when provided, along with group names and memberships. The authenticated service account can have only an ID and type if it is absent from the directory. Vault names and item titles are omitted unless you pass `--include-titles`. Titles can contain sensitive free text. Keep the output private; the local `output/` directory is gitignored.
+- The collector uses CLI metadata commands and SDK vault-accessor reads with an explicit output schema. It does not fetch item contents, export secret values, modify access, or infer secret-read permission from vault ownership/management alone. Grants retain known SDK permission names in lowercase and the complete `permissions_bitmask`, including unknown bits.
 - A collection failure does not publish a partial snapshot or replace an existing output. A successful run replaces the selected file or object with one complete snapshot. A publication failure returns a nonzero exit status.
 
 ## Development

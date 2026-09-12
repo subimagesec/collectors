@@ -1,20 +1,16 @@
 import json
 import os
-import re
 import subprocess
 from datetime import UTC, datetime
 from typing import Any
 from uuid import uuid4
 
 from onepassword_collector import __version__
+from onepassword_collector.validation import CollectorError
+from onepassword_collector.validation import identifier as _identifier
+from onepassword_collector.vault_access import collect_vault_access
 
 COMMAND_TIMEOUT_SECONDS = 60
-_IDENTIFIER = re.compile(r"[a-zA-Z0-9]{26}\Z")
-_PERMISSION = re.compile(r"[a-z][a-z0-9_]{0,63}\Z")
-
-
-class CollectorError(Exception):
-    pass
 
 
 def _object(value: Any) -> dict[str, Any]:
@@ -29,12 +25,6 @@ def _text(value: Any, field: str, *, allow_empty: bool = False) -> str:
     if any(ord(character) < 32 for character in value):
         raise CollectorError(f"1Password returned an invalid {field}.")
     return value
-
-
-def _identifier(value: Any) -> str:
-    if not isinstance(value, str) or _IDENTIFIER.fullmatch(value) is None:
-        raise CollectorError("A valid 26-character 1Password ID is required.")
-    return value.lower()
 
 
 def _record_id(record: dict[str, Any], *, user_ids: bool) -> str:
@@ -78,11 +68,8 @@ def _reject_json_constant(_: str) -> None:
 
 
 class OpClient:
-    def __init__(self, op_path: str, account: str | None) -> None:
+    def __init__(self, op_path: str) -> None:
         self.op_path = _text(op_path, "CLI executable")
-        self.account = (
-            _text(account, "account selector") if account is not None else None
-        )
         self.environment = os.environ.copy()
         if self.environment.get("OP_CONNECT_HOST") or self.environment.get(
             "OP_CONNECT_TOKEN"
@@ -100,10 +87,7 @@ class OpClient:
             "--iso-timestamps",
             "--cache=false",
             "--no-color",
-            "--encoding=UTF-8",
         ]
-        if self.account is not None:
-            command.append(f"--account={self.account}")
         try:
             result = subprocess.run(
                 command,
@@ -140,20 +124,27 @@ class OpClient:
             ) from None
 
 
-def _permissions(record: dict[str, Any]) -> list[str]:
-    permissions = record.get("permissions")
-    if isinstance(permissions, str):
-        permissions = permissions.split(",")
-    if not isinstance(permissions, list):
-        raise CollectorError("1Password returned invalid vault permissions.")
-    result = [
-        _text(permission, "vault permission").strip() for permission in permissions
-    ]
-    if any(_PERMISSION.fullmatch(permission) is None for permission in result):
-        raise CollectorError("1Password returned invalid vault permissions.")
-    if len(result) != len(set(result)):
-        raise CollectorError("1Password returned duplicate vault permissions.")
-    return sorted(result)
+def _user(identifier: str, raw: dict[str, Any]) -> dict[str, str]:
+    user = {
+        "id": identifier,
+        "name": _text(raw.get("name"), "user name", allow_empty=True),
+        "email": _text(raw.get("email"), "user email"),
+        "state": _text(raw.get("state"), "user state"),
+    }
+    if "type" in raw:
+        user["type"] = _text(raw["type"], "user type")
+    return user
+
+
+def _include_referenced_user(
+    users: dict[str, dict[str, str]], identifier: str, raw: dict[str, Any]
+) -> None:
+    if identifier in users:
+        return
+    # Service accounts can appear in relationships but not in the directory list.
+    if raw.get("type") != "SERVICE_ACCOUNT":
+        raise CollectorError("A referenced user is missing from the user list.")
+    users[identifier] = _user(identifier, raw)
 
 
 def _timestamp(value: Any) -> str:
@@ -199,7 +190,6 @@ def collect(
     *,
     account_id: str,
     op_path: str = "op",
-    account: str | None = None,
     include_titles: bool = False,
 ) -> dict[str, Any]:
     expected_account_id = _identifier(account_id)
@@ -211,50 +201,80 @@ def collect(
     if not isinstance(include_titles, bool):
         raise CollectorError("include_titles must be a boolean.")
 
-    client = OpClient(op_path, account)
+    client = OpClient(op_path)
+    token = client.environment.get("OP_SERVICE_ACCOUNT_TOKEN")
+    if not token:
+        raise CollectorError("OP_SERVICE_ACCOUNT_TOKEN is required.")
     identity = _object(client.read(["whoami"], "account identity"))
     actual_account_id = _identifier(identity.get("account_uuid"))
-    _identifier(identity.get("user_uuid"))
+    authenticated_user_id = _identifier(identity.get("user_uuid"))
+    if identity.get("user_type") != "SERVICE_ACCOUNT":
+        raise CollectorError("The authenticated identity must be a service account.")
     if actual_account_id != expected_account_id:
         raise CollectorError("The authenticated 1Password account does not match.")
-    if client.account is None and not client.environment.get(
-        "OP_SERVICE_ACCOUNT_TOKEN"
-    ):
-        client.account = actual_account_id
-
     readable_vaults = _records(client.read(["vault", "list"], "vault listing"))
     if not set(requested_vault_ids).issubset(readable_vaults):
         raise CollectorError("The credential cannot read every configured vault.")
     raw_users = _records(client.read(["user", "list"], "user listing"), user_ids=True)
     raw_groups = _records(client.read(["group", "list"], "group listing"))
-    users: list[dict[str, Any]] = []
-    for identifier, raw in sorted(raw_users.items()):
-        user = {
-            "id": identifier,
-            "name": _text(raw.get("name"), "user name", allow_empty=True),
-            "email": _text(raw.get("email"), "user email"),
-            "state": _text(raw.get("state"), "user state"),
+    users = {
+        identifier: _user(identifier, raw) for identifier, raw in raw_users.items()
+    }
+    if authenticated_user_id in users:
+        if users[authenticated_user_id].get("type") != "SERVICE_ACCOUNT":
+            raise CollectorError("1Password returned a conflicting user identity.")
+    else:
+        users[authenticated_user_id] = {
+            "id": authenticated_user_id,
+            "type": "SERVICE_ACCOUNT",
         }
-        if "type" in raw:
-            user["type"] = _text(raw["type"], "user type")
-        users.append(user)
 
     groups: list[dict[str, Any]] = []
     group_memberships: list[dict[str, str]] = []
     for group_id, raw in sorted(raw_groups.items()):
         groups.append({"id": group_id, "name": _text(raw.get("name"), "group name")})
+        raw_members = client.read(
+            ["group", "user", "list", group_id], "group membership"
+        )
+        # The CLI returns JSON null for groups with no members.
         members = _records(
-            client.read(["group", "user", "list", group_id], "group membership"),
+            [] if raw_members is None else raw_members,
             user_ids=True,
         )
-        for user_id in sorted(members):
-            if user_id not in raw_users:
-                raise CollectorError("A group member is missing from the user list.")
+        for user_id, raw_member in sorted(members.items()):
+            _include_referenced_user(users, user_id, raw_member)
             group_memberships.append({"group_id": group_id, "user_id": user_id})
 
+    user_grants, group_grants = collect_vault_access(requested_vault_ids, token)
+    for grant in user_grants:
+        user_id = grant["user_id"]
+        if user_id not in users:
+            raw = _object(client.read(["user", "get", user_id], "user metadata"))
+            if _record_id(raw, user_ids=True) != user_id:
+                raise CollectorError("1Password returned a different user identity.")
+            users[user_id] = _user(user_id, raw)
+    for grant in group_grants:
+        group_id = grant["group_id"]
+        if group_id not in raw_groups:
+            raw = _object(client.read(["group", "get", group_id], "group metadata"))
+            if _record_id(raw, user_ids=False) != group_id:
+                raise CollectorError("1Password returned a different group identity.")
+            raw_groups[group_id] = raw
+            groups.append(
+                {"id": group_id, "name": _text(raw.get("name"), "group name")}
+            )
+            raw_members = client.read(
+                ["group", "user", "list", group_id], "group membership"
+            )
+            for user_id, member in sorted(
+                _records(
+                    [] if raw_members is None else raw_members, user_ids=True
+                ).items()
+            ):
+                _include_referenced_user(users, user_id, member)
+                group_memberships.append({"group_id": group_id, "user_id": user_id})
+
     vaults: list[dict[str, str]] = []
-    user_grants: list[dict[str, Any]] = []
-    group_grants: list[dict[str, Any]] = []
     items: list[dict[str, Any]] = []
     seen_item_ids: set[str] = set()
     for vault_id in requested_vault_ids:
@@ -264,33 +284,6 @@ def collect(
                 readable_vaults[vault_id].get("name"), "vault name", allow_empty=True
             )
         vaults.append(vault)
-        raw_user_grants = _records(
-            client.read(["vault", "user", "list", vault_id], "vault user grants"),
-            user_ids=True,
-        )
-        for user_id, raw in sorted(raw_user_grants.items()):
-            if user_id not in raw_users:
-                raise CollectorError("A vault user is missing from the user list.")
-            user_grants.append(
-                {
-                    "vault_id": vault_id,
-                    "user_id": user_id,
-                    "permissions": _permissions(raw),
-                }
-            )
-        raw_group_grants = _records(
-            client.read(["vault", "group", "list", vault_id], "vault group grants")
-        )
-        for group_id, raw in sorted(raw_group_grants.items()):
-            if group_id not in raw_groups:
-                raise CollectorError("A vault group is missing from the group list.")
-            group_grants.append(
-                {
-                    "vault_id": vault_id,
-                    "group_id": group_id,
-                    "permissions": _permissions(raw),
-                }
-            )
         raw_items = _records(
             client.read(
                 ["item", "list", f"--vault={vault_id}", "--include-archive"],
@@ -316,9 +309,11 @@ def collect(
             "include_archived": True,
         },
         "status": "complete",
-        "users": users,
-        "groups": groups,
-        "group_memberships": group_memberships,
+        "users": [users[identifier] for identifier in sorted(users)],
+        "groups": sorted(groups, key=lambda row: row["id"]),
+        "group_memberships": sorted(
+            group_memberships, key=lambda row: (row["group_id"], row["user_id"])
+        ),
         "vaults": vaults,
         "vault_user_grants": user_grants,
         "vault_group_grants": group_grants,
