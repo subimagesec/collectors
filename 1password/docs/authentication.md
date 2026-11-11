@@ -4,7 +4,7 @@
 
 The collector requires `OP_SERVICE_ACCOUNT_TOKEN`. It uses the same token with the official 1Password CLI for inventory and the official Python SDK 0.4.1 for vault access grants. A desktop CLI user session does not replace this token.
 
-Full local collection was validated with **1Password CLI 2.32.1** and **Python SDK 0.4.1**, using **Read Items** access to selected existing vaults. The tested token had no write, share, vault-creation, or environment access. Validate your intended account, scope, and runtime before scheduling collection.
+Full local collection was validated with **1Password CLI 2.42.0** and **Python SDK 0.4.1**, using **Read Items** access to selected existing vaults. The tested token had no write, share, vault-creation, or environment access. Validate your intended account, scope, and runtime before scheduling collection. 1Password rejects outdated CLI releases, so keep the CLI current.
 
 The credential must support these read operations:
 

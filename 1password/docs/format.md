@@ -1,6 +1,6 @@
 # 1Password snapshot format
 
-[schemas/v1.json](../schemas/v1.json) defines schema version `1.0`. The format is intended for a separate Cartography importer; no such importer is shipped by this repository.
+[schemas/v1.json](../schemas/v1.json) defines schema version `1.0`. The [Cartography 1Password module](https://docs.cartography.dev/modules/onepassword/index.html) ingests it.
 
 ## Identity and coverage
 

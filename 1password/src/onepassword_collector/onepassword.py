@@ -105,6 +105,13 @@ class OpClient:
         except (OSError, ValueError, UnicodeError):
             raise CollectorError(f"Could not run 1Password {operation}.") from None
         if result.returncode != 0:
+            # 1Password rejects old CLI releases for every command. The CLI's
+            # message is generic and safe to match; the rest of stderr is not
+            # surfaced because it can echo provider data.
+            if isinstance(result.stderr, str) and "is outdated" in result.stderr:
+                raise CollectorError(
+                    "1Password rejected this CLI version. Update the 1Password CLI."
+                )
             raise CollectorError(
                 f"1Password {operation} failed. Check authentication and permissions."
             )

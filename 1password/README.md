@@ -2,13 +2,13 @@
 
 A customer-run collector that exports a JSON snapshot of selected 1Password vaults, their access grants, group memberships, and item metadata for security graphs.
 
-The collector runs where you control the 1Password credential. It publishes only to the local file, S3 object, or Google Cloud Storage object you explicitly select. A Cartography module to ingest this format is a separate, future integration; this repository does not currently install or configure one.
+The collector runs where you control the 1Password credential. It publishes only to the local file, S3 object, or Google Cloud Storage object you explicitly select. [Cartography](https://docs.cartography.dev/modules/onepassword/index.html) ingests the snapshots into a security graph.
 
 ## 1Password authentication comes first
 
 Set `OP_SERVICE_ACCOUNT_TOKEN` to a 1Password service account token scoped to the intended vaults with **Read Items** access. The collector uses that token with the official CLI for inventory and the official Python SDK for authoritative user/group vault grants. It requires the token even if a desktop CLI user session is available.
 
-Full local collection was validated with **1Password CLI 2.32.1** and **Python SDK 0.4.1** using this permission scope. Follow the [service account setup and validation guide](docs/authentication.md) for your intended deployment before scheduling collection. The collector does not grant permissions, and fails if required reads are unavailable or unauthorized.
+Full local collection was validated with **1Password CLI 2.42.0** and **Python SDK 0.4.1** using this permission scope. Follow the [service account setup and validation guide](docs/authentication.md) for your intended deployment before scheduling collection. The collector does not grant permissions, and fails if required reads are unavailable or unauthorized.
 
 ## Run locally
 
