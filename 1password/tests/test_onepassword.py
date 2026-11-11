@@ -395,6 +395,19 @@ def test_any_required_command_failure_aborts_without_leaking_provider_output(
     assert capsys.readouterr() == ("", "")
 
 
+def test_outdated_cli_failure_says_to_update_the_cli(transport):
+    responses, _ = transport
+    responses[("whoami",)] = subprocess.CompletedProcess(
+        [],
+        1,
+        "",
+        "[ERROR] (403) This version of 1Password CLI is outdated. "
+        "Run 'op update' to get the latest version.",
+    )
+    with pytest.raises(CollectorError, match="Update the 1Password CLI"):
+        collect([VAULT], account_id=ACCOUNT)
+
+
 @pytest.mark.parametrize(
     "failure",
     [
