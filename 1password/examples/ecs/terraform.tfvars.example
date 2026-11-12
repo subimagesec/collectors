@@ -1,0 +1,10 @@
+region = "us-east-1"
+
+collector_image      = "123456789012.dkr.ecr.us-east-1.amazonaws.com/collectors/1password@sha256:0000000000000000000000000000000000000000000000000000000000000000"
+account_id           = "aaaaaaaaaaaaaaaaaaaaaaaaaa"
+vault_ids            = ["bbbbbbbbbbbbbbbbbbbbbbbbbb"]
+op_secret_arn        = "arn:aws:secretsmanager:us-east-1:123456789012:secret:onepassword-collector-token-AbCdEf"
+op_secret_version_id = "00000000-0000-0000-0000-000000000000"
+vpc_id               = "vpc-00000000000000000"
+subnet_ids           = ["subnet-00000000000000000"]
+bucket_name          = "example-collector-snapshots-replace-me"
