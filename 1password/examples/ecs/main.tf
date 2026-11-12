@@ -6,7 +6,7 @@ locals {
     ["--account-id", var.account_id],
     flatten([for id in var.vault_ids : ["--vault-id", id]]),
     ["--output", "s3://${var.bucket_name}/${var.output_object}"],
-    var.include_titles ? ["--include-titles"] : [],
+    var.include_titles ? [] : ["--omit-titles"],
   )
   task_assume_role_policy = jsonencode({
     Version = "2012-10-17"

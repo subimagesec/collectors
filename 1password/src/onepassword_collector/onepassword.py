@@ -208,7 +208,7 @@ def collect(
     *,
     account_id: str,
     op_path: str = "op",
-    include_titles: bool = False,
+    include_titles: bool = True,
 ) -> dict[str, Any]:
     expected_account_id = _identifier(account_id)
     if not isinstance(vault_ids, list) or not vault_ids:

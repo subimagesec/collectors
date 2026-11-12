@@ -44,7 +44,7 @@ For Google Cloud Storage, install `--extra gcp` and use `gs://example-collector-
 
 - Coverage is limited to the explicitly configured vaults. It is not a claim of account-wide vault coverage.
 - Archived items are included. The snapshot records its vault scope, collection time, and schema version; see the [format and ingestion contract](docs/format.md) and [JSON schema](schemas/v1.json).
-- User names, email addresses, and states are included when provided, along with group names and memberships. The authenticated service account can have only an ID and type if it is absent from the directory. Vault names and item titles are omitted unless you pass `--include-titles`. Titles can contain sensitive free text. Keep the output private; the local `output/` directory is gitignored.
+- User names, email addresses, and states are included when provided, along with group names and memberships. The authenticated service account can have only an ID and type if it is absent from the directory. Vault names and item titles are included; pass `--omit-titles` to leave them out. Titles can contain sensitive free text. Keep the output private; the local `output/` directory is gitignored.
 - The collector uses CLI metadata commands and SDK vault-accessor reads with an explicit output schema. It does not fetch item contents, export secret values, modify access, or infer secret-read permission from vault ownership/management alone. Grants retain known SDK permission names in lowercase and the complete `permissions_bitmask`, including unknown bits.
 - A collection failure does not publish a partial snapshot or replace an existing output. A successful run replaces the selected file or object with one complete snapshot. A publication failure returns a nonzero exit status.
 

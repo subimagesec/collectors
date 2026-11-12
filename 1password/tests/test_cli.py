@@ -103,7 +103,7 @@ def collector_process(tmp_path):
     environment["PYTHONPATH"] = str(Path(__file__).parent / "fakes")
     target = tmp_path / "snapshot.json"
 
-    def run(*, failure=None, account_id=ACCOUNT, include_titles=False):
+    def run(*, failure=None, account_id=ACCOUNT, omit_titles=False):
         env = environment.copy()
         if failure is not None:
             env["COLLECTOR_TEST_FAILURE"] = failure
@@ -120,8 +120,8 @@ def collector_process(tmp_path):
             "--op-path",
             str(executable),
         ]
-        if include_titles:
-            command.append("--include-titles")
+        if omit_titles:
+            command.append("--omit-titles")
         return subprocess.run(
             command, env=env, capture_output=True, text=True, timeout=20
         )
@@ -148,7 +148,9 @@ def test_complete_command_publishes_valid_schema_without_secret_fields(
     schema = json.loads(schema_path.read_text())
     validator = Draft202012Validator(schema, format_checker=FormatChecker())
     validator.validate(snapshot)
-    assert snapshot["items"] == [{"id": ITEM, "vault_id": VAULT}]
+    assert snapshot["items"] == [
+        {"id": ITEM, "title": "Example item", "vault_id": VAULT}
+    ]
     assert snapshot["scope"]["vault_ids"] == [VAULT]
     assert snapshot["vault_group_grants"][0]["permissions"] == [
         "manage_vault",
@@ -191,14 +193,23 @@ def test_wrong_account_does_not_publish(collector_process):
     assert "account does not match" in result.stderr
 
 
-def test_titles_only_appear_when_requested(collector_process):
+def test_titles_appear_by_default(collector_process):
     run, target = collector_process
-    result = run(include_titles=True)
+    result = run()
     assert result.returncode == 0
     snapshot = json.loads(target.read_text())
     assert snapshot["items"][0]["title"] == "Example item"
     assert snapshot["vaults"][0]["name"] == "Example vault"
     assert CANARY not in target.read_text()
+
+
+def test_omit_titles_leaves_out_names_and_titles(collector_process):
+    run, target = collector_process
+    result = run(omit_titles=True)
+    assert result.returncode == 0
+    snapshot = json.loads(target.read_text())
+    assert "title" not in snapshot["items"][0]
+    assert "name" not in snapshot["vaults"][0]
 
 
 def test_unexpected_error_does_not_print_exception_payload(

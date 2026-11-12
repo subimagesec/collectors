@@ -110,6 +110,6 @@ variable "snapshot_readers" {
 
 variable "include_titles" {
   type        = bool
-  description = "Include vault names and item titles, which can contain sensitive text."
-  default     = false
+  description = "Include vault names and item titles. Set to false to leave out titles that can contain sensitive text."
+  default     = true
 }

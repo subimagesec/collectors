@@ -85,8 +85,9 @@ holds the bucket. Then follow these steps in order.
   arbitrary numeric UID breaks authentication.
 - **Errors are deliberately generic** so they never echo provider data. To debug
   authentication, run `op whoami` in the same image and environment.
-- `--include-titles` adds vault names and item titles. Titles are free text and
-  can be sensitive; leave it off unless the user asks for it.
+- Snapshots include vault names and item titles, so answers name the vaults and
+  items. Titles are free text; pass `--omit-titles` (or set `include_titles =
+  false` in an example) only if the user asks to keep them out.
 
 ## Code map
 

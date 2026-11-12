@@ -135,8 +135,8 @@ variable "schedule_expression" {
 
 variable "include_titles" {
   type        = bool
-  description = "Include vault names and item titles, which can contain sensitive text."
-  default     = false
+  description = "Include vault names and item titles. Set to false to leave out titles that can contain sensitive text."
+  default     = true
 }
 
 variable "subimage_tenant_role_arn" {

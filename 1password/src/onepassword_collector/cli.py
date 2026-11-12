@@ -35,9 +35,9 @@ def parser() -> argparse.ArgumentParser:
         help="Local file path, s3://bucket/key, or gs://bucket/key",
     )
     result.add_argument(
-        "--include-titles",
+        "--omit-titles",
         action="store_true",
-        help="Include vault names and item titles (may contain sensitive text)",
+        help="Leave out vault names and item titles, which can contain sensitive text",
     )
     result.add_argument("--op-path", default="op", help="1Password CLI executable")
     return result
@@ -52,7 +52,7 @@ def main(argv: list[str] | None = None) -> int:
             args.vault_id,
             account_id=args.account_id,
             op_path=args.op_path,
-            include_titles=args.include_titles,
+            include_titles=not args.omit_titles,
         )
         data = (
             json.dumps(snapshot, ensure_ascii=False, allow_nan=False, sort_keys=True)
