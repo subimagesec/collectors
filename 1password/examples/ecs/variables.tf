@@ -148,6 +148,11 @@ variable "subimage_tenant_role_arn" {
     condition     = var.subimage_tenant_role_arn == null || can(regex("^arn:aws:iam::[0-9]{12}:role/.+$", var.subimage_tenant_role_arn))
     error_message = "Use an IAM role ARN, such as arn:aws:iam::123456789012:role/acme-subimage-readonly."
   }
+
+  validation {
+    condition     = var.subimage_tenant_role_arn == null || strcontains(var.output_object, "/")
+    error_message = "Put output_object under a prefix, such as onepassword/snapshot.json, so Subimage's role can read only that prefix."
+  }
 }
 
 variable "subimage_external_id" {
@@ -158,5 +163,14 @@ variable "subimage_external_id" {
   validation {
     condition     = (var.subimage_external_id == null) == (var.subimage_tenant_role_arn == null)
     error_message = "Set subimage_tenant_role_arn and subimage_external_id together, or neither."
+  }
+
+  validation {
+    condition = var.subimage_external_id == null || (
+      can(regex("^[A-Za-z0-9+=,.@:/_-]+$", var.subimage_external_id))
+      && try(length(var.subimage_external_id), 0) >= 2
+      && try(length(var.subimage_external_id), 0) <= 1224
+    )
+    error_message = "Use the external ID shown on Subimage's 1Password setup page, such as subimage-onepassword-acme."
   }
 }

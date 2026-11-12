@@ -1,4 +1,4 @@
-# Subimage Collectors
+# Subimage collectors
 
 Open source, customer-run collectors that export metadata for security graphs. [Cartography](https://github.com/cartography-cncf/cartography) ingests the snapshots, and so does [Subimage](https://subimage.io), a managed Cartography with faster parallel syncs, hardened per-tenant infrastructure, and attack-path analysis.
 

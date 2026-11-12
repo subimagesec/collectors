@@ -6,7 +6,7 @@ Use a 1Password service account with **Read Items** access to the intended vault
 
 ## Prerequisites
 
-- Terraform 1.5+ and approved AWS CLI credentials for resource/IAM creation. No stored cloud key is passed to the job.
+- Terraform 1.9+ and approved AWS CLI credentials for resource/IAM creation. No stored cloud key is passed to the job.
 - Existing subnets in one VPC with IPv4 HTTPS egress to 1Password, the image registry, Secrets Manager, S3, and CloudWatch Logs. Private subnets need NAT for public endpoints; alternatively use public subnets and set `assign_public_ip = true`. This example provisions no routes or NAT gateway and exposes no inbound port.
 - An existing Secrets Manager secret in the deployment account/region. Its selected version must contain the raw token string, not a JSON wrapper. For example:
 

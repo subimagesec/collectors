@@ -43,7 +43,9 @@ Use `uv run --frozen` for Python. CI runs the same Make targets.
   synthetic and uses canary values to prove secrets never leak.
 - **Never export secret values.** A collector reads metadata only. A field that
   could carry secret material stays out of the snapshot unless it is opt-in and
-  documented.
+  documented. Names and titles that make the graph readable, such as 1Password
+  vault names and item titles, are collected by default and have a documented
+  opt-out (`--omit-titles`).
 - **Keep credentials out of arguments, logs, and errors.** Pass them through
   the environment. Error messages are generic and never echo provider output.
 - **Fail closed.** A collector publishes only a complete, validated snapshot.

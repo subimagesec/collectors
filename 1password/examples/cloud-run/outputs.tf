@@ -14,6 +14,6 @@ output "runtime_service_account" {
 }
 
 output "subimage_onepassword_source" {
-  description = "Value for onepassword_source in Subimage. Grant Subimage's GCP principal read access with snapshot_readers."
+  description = "Value for onepassword_source in Subimage. Add Subimage's GCP principal to snapshot_readers, which grants read access to the whole snapshot bucket."
   value       = "gs://${google_storage_bucket.snapshots.name}/${dirname(var.output_object) == "." ? "" : "${dirname(var.output_object)}/"}"
 }

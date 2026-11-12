@@ -1,4 +1,4 @@
-# 1Password Collector
+# 1Password collector
 
 A customer-run collector that exports a JSON snapshot of selected 1Password vaults, their access grants, group memberships, and item metadata for security graphs.
 
@@ -77,7 +77,7 @@ After validating authentication, read the [deployment guide](docs/deployment.md)
 
 [Subimage](https://subimage.io) reads the snapshot from your bucket. The shortest setup:
 
-1. Create a read-only 1Password service account for the vaults to cover, and store its token without the trailing newline that `--raw` prints:
+1. Create a read-only 1Password service account for the vaults to cover, and store its token without the trailing newline that `--raw` prints. For S3, store it in AWS Secrets Manager:
 
    ```sh
    op service-account create "Subimage collector" \
@@ -86,6 +86,8 @@ After validating authentication, read the [deployment guide](docs/deployment.md)
      | aws secretsmanager create-secret --name onepassword-collector-token \
          --secret-string file:///dev/stdin
    ```
+
+   For GCS, end the pipeline with `gcloud secrets create onepassword-collector-token --data-file=-` instead.
 
 2. Deploy a scheduled example:
    - **S3:** the [ECS example](examples/ecs/README.md). Set `subimage_tenant_role_arn` and `subimage_external_id` from Subimage's 1Password setup page, and the example also creates the read-only role Subimage assumes.

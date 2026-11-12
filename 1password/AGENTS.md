@@ -33,22 +33,30 @@ holds the bucket. Then follow these steps in order.
    vaults, and new vaults are not added to a service account automatically.
 
 3. **Create a read-only service account and store its token.** Never print the
-   token or write it to a file. Pipe it straight into the secret store, and
-   strip the trailing newline that `--raw` prints:
+   token or write it to a file. Pipe it straight into the secret store of the
+   cloud that runs the collector, and strip the trailing newline that `--raw`
+   prints. On AWS:
 
    ```sh
    op service-account create "Subimage collector" \
-     --vault <vault-id>:read_items --vault <vault-id>:read_items \
+     --vault <vault-id>:read_items --vault <another-vault-id>:read_items \
      --raw | tr -d '\n' \
      | aws secretsmanager create-secret --name onepassword-collector-token \
          --secret-string file:///dev/stdin
    ```
 
+   On Google Cloud, end the pipeline with
+   `gcloud secrets create onepassword-collector-token --data-file=-` in the
+   deployment project, and pass the secret and its version (`1`) to the Cloud
+   Run example as `op_secret_id` and `op_secret_version`.
+
    Ask the user to confirm the vault list first: a Read Items token can read the
    secrets in those vaults.
 
-4. **Deploy a scheduled example.** Each one creates a private bucket, the
-   schedule, and least-privilege roles, and accepts no inbound traffic.
+4. **Deploy a scheduled example.** The ECS and Cloud Run examples create a
+   private bucket, the schedule, and least-privilege roles. The Kubernetes
+   manifest needs an existing bucket and a workload identity that can write to
+   it. None of them accepts inbound traffic.
 
    | Cloud | Example | Subimage access |
    | --- | --- | --- |
@@ -68,7 +76,9 @@ holds the bucket. Then follow these steps in order.
 6. **Connect the consumer.**
    - Subimage: enter the example's `subimage_onepassword_source` output (and
      `subimage_onepassword_aws_account_id` for S3) in **Modules** → **1Password**,
-     then run a sync.
+     then run a sync. The Kubernetes manifest has no outputs: enter the
+     `s3://<bucket>/<prefix>/` that the CronJob writes to and the bucket's AWS
+     account ID, and create the reader role from the Subimage setup guide.
    - Cartography: pass the bucket prefix to `--onepassword-source`, with
      credentials that can list and read it.
 
@@ -86,8 +96,8 @@ holds the bucket. Then follow these steps in order.
 - **Errors are deliberately generic** so they never echo provider data. To debug
   authentication, run `op whoami` in the same image and environment.
 - Snapshots include vault names and item titles, so answers name the vaults and
-  items. Titles are free text; pass `--omit-titles` (or set `include_titles =
-  false` in an example) only if the user asks to keep them out.
+  items. Titles are free text and can be sensitive. Pass `--omit-titles` (or set
+  `include_titles = false` in an example) if the user wants them left out.
 
 ## Code map
 
