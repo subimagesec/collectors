@@ -29,7 +29,7 @@ Every grant includes `permissions_bitmask`, the unsigned 32-bit integer returned
 
 ## Freshness and safe replacement
 
-`status: "complete"` means the configured read operations completed and passed validation. It does not mean that every account vault was collected, or that the reads describe one transactional instant. Per-group and per-vault CLI reads run in a small concurrent pool, and SDK reads follow; memberships or grants can change during a run.
+`status: "complete"` means the configured read operations completed and passed validation. It does not mean that every account vault was collected, or that the reads describe one transactional instant. Reads run in stages, and per-group and per-vault CLI reads within a stage run in a small concurrent pool; memberships or grants can change during a run.
 
 `collected_at` is the UTC time at collection completion, from the collector host's clock. `snapshot_id` is a unique run identifier, not a sortable sequence. `collector.name` and `collector.version` identify the producer. Consumers should validate the schema, expected account, declared scope, completeness, and freshness before changing graph state.
 
