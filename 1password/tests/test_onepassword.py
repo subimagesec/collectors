@@ -750,3 +750,14 @@ def test_other_service_account_grants_record_id_and_type(transport):
 
     assert {"id": OTHER_ID, "type": "SERVICE_ACCOUNT"} in snapshot["users"]
     assert OTHER_ID in {grant["user_id"] for grant in snapshot["vault_user_grants"]}
+
+
+def test_surrounding_whitespace_in_the_token_is_ignored(transport, monkeypatch):
+    _, calls = transport
+    monkeypatch.setenv("OP_SERVICE_ACCOUNT_TOKEN", f" {CANARY}\n")
+
+    collect([VAULT], account_id=ACCOUNT)
+
+    assert {options["env"]["OP_SERVICE_ACCOUNT_TOKEN"] for _, options in calls} == {
+        CANARY
+    }

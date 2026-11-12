@@ -138,3 +138,25 @@ variable "include_titles" {
   description = "Include vault names and item titles, which can contain sensitive text."
   default     = false
 }
+
+variable "subimage_tenant_role_arn" {
+  type        = string
+  description = "Optional. Your Subimage tenant role ARN, shown on Subimage's 1Password setup page. With subimage_external_id, creates SubImageOnePasswordRole so Subimage can read the snapshot."
+  default     = null
+
+  validation {
+    condition     = var.subimage_tenant_role_arn == null || can(regex("^arn:aws:iam::[0-9]{12}:role/.+$", var.subimage_tenant_role_arn))
+    error_message = "Use an IAM role ARN, such as arn:aws:iam::123456789012:role/acme-subimage-readonly."
+  }
+}
+
+variable "subimage_external_id" {
+  type        = string
+  description = "Optional. The external ID shown on Subimage's 1Password setup page, such as subimage-onepassword-acme. Required with subimage_tenant_role_arn."
+  default     = null
+
+  validation {
+    condition     = (var.subimage_external_id == null) == (var.subimage_tenant_role_arn == null)
+    error_message = "Set subimage_tenant_role_arn and subimage_external_id together, or neither."
+  }
+}

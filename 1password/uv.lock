@@ -905,7 +905,7 @@ wheels = [
 
 [[package]]
 name = "subimage-collector-onepassword"
-version = "0.1.0"
+version = "0.1.1"
 source = { editable = "." }
 dependencies = [
     { name = "onepassword-sdk" },
