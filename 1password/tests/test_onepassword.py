@@ -726,3 +726,27 @@ def test_sparse_directory_identity_agrees_with_authenticated_service_account(tra
     snapshot = collect([VAULT], account_id=ACCOUNT)
 
     assert snapshot["users"][0] == identity
+
+
+def test_other_service_account_grants_record_id_and_type(transport):
+    responses, _ = transport
+    responses[("user", "get", OTHER_ID)] = subprocess.CompletedProcess(
+        [],
+        1,
+        "",
+        f'[ERROR] "{OTHER_ID}" isn\'t a user in this account. '
+        "Specify the user with their UUID, name, or email.",
+    )
+    responses[("sdk", "vault", "get", VAULT)]["access"].append(
+        {
+            "vault_uuid": VAULT,
+            "accessor_type": "user",
+            "accessor_uuid": OTHER_ID,
+            "permissions": 32,
+        }
+    )
+
+    snapshot = collect([VAULT], account_id=ACCOUNT)
+
+    assert {"id": OTHER_ID, "type": "SERVICE_ACCOUNT"} in snapshot["users"]
+    assert OTHER_ID in {grant["user_id"] for grant in snapshot["vault_user_grants"]}

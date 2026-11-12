@@ -13,6 +13,10 @@ from onepassword_collector.vault_access import collect_vault_access
 COMMAND_TIMEOUT_SECONDS = 60
 
 
+class NotAUserError(CollectorError):
+    pass
+
+
 def _object(value: Any) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise CollectorError("1Password returned an invalid object.")
@@ -112,6 +116,10 @@ class OpClient:
                 raise CollectorError(
                     "1Password rejected this CLI version. Update the 1Password CLI."
                 )
+            if isinstance(result.stderr, str) and "isn't a user in this account" in (
+                result.stderr
+            ):
+                raise NotAUserError(f"1Password {operation} found no such user.")
             raise CollectorError(
                 f"1Password {operation} failed. Check authentication and permissions."
             )
@@ -256,7 +264,13 @@ def collect(
     for grant in user_grants:
         user_id = grant["user_id"]
         if user_id not in users:
-            raw = _object(client.read(["user", "get", user_id], "user metadata"))
+            try:
+                raw = _object(client.read(["user", "get", user_id], "user metadata"))
+            except NotAUserError:
+                # The CLI cannot read other service accounts: they hold vault
+                # grants as user accessors but are absent from user commands.
+                users[user_id] = {"id": user_id, "type": "SERVICE_ACCOUNT"}
+                continue
             if _record_id(raw, user_ids=True) != user_id:
                 raise CollectorError("1Password returned a different user identity.")
             users[user_id] = _user(user_id, raw)
