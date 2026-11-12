@@ -1,7 +1,7 @@
 FROM 1password/op:2.42.0@sha256:b0d7eebcb09bdc9d5862af91533e1851c968d4f969270c906f5da8c574f87e93 AS onepassword
-FROM ghcr.io/astral-sh/uv:0.12.13@sha256:b485bd65cc2cf1c9a93b3554012c9c3778cf7b1b5fd3d3096ce9e1226c97e1e6 AS uv
+FROM ghcr.io/astral-sh/uv:0.13.7@sha256:96f40d3904aad8d0bd010539001d36c8e2188b981e1334471a90c4a1d93bb490 AS uv
 
-FROM python:3.13.15-slim-bookworm@sha256:ed86c82274b3c69b52fb5820f358f0bd7df0b603332063cb5c6e32bd220c3e6e AS build
+FROM python:3.15.0-slim-bookworm@sha256:0e019bbdfb5d9874cb2389f1c2884b64aa2ac97c99960b5bc521cef978c0617d AS build
 COPY --from=uv /uv /usr/local/bin/uv
 ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy
 WORKDIR /opt/collector
@@ -9,7 +9,7 @@ COPY pyproject.toml uv.lock README.md LICENSE ./
 COPY src/ ./src/
 RUN uv sync --frozen --no-dev --all-extras --no-editable
 
-FROM python:3.13.15-slim-bookworm@sha256:ed86c82274b3c69b52fb5820f358f0bd7df0b603332063cb5c6e32bd220c3e6e
+FROM python:3.15.0-slim-bookworm@sha256:0e019bbdfb5d9874cb2389f1c2884b64aa2ac97c99960b5bc521cef978c0617d
 LABEL org.opencontainers.image.source="https://github.com/subimagesec/collectors" \
       org.opencontainers.image.title="1Password metadata collector" \
       org.opencontainers.image.description="Customer-operated 1Password metadata collection for Cartography"
