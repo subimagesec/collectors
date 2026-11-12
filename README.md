@@ -1,6 +1,8 @@
-# SubImage Collectors
+# Subimage Collectors
 
-Open-source, customer-run collectors that export metadata for security graphs.
+Open source, customer-run collectors that export metadata for security graphs. [Cartography](https://github.com/cartography-cncf/cartography) ingests the snapshots, and so does [Subimage](https://subimage.io), a managed Cartography with faster parallel syncs, hardened per-tenant infrastructure, and attack-path analysis.
+
+Agents setting up or changing a collector should start with [AGENTS.md](AGENTS.md).
 
 ## Available collectors
 
