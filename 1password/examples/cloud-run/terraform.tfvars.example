@@ -7,3 +7,6 @@ vault_ids         = ["bbbbbbbbbbbbbbbbbbbbbbbbbb"]
 op_secret_id      = "onepassword-collector-token"
 op_secret_version = "1"
 bucket_name       = "example-collector-snapshots-replace-me"
+
+# Optional: principals that read the snapshot, such as your Subimage tenant's GCP principal.
+# snapshot_readers = ["serviceAccount:reader@example-consumer-project.iam.gserviceaccount.com"]

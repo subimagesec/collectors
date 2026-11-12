@@ -18,7 +18,7 @@ Build the image from the reviewed source, publish it to a registry available to 
 
 The collector uploads only when `--output` names an `s3://` or `gs://` destination. A local filename writes a local file. There is no default SubImage endpoint or hidden upload. The image includes both AWS and Google Cloud dependencies; local Python installs can select the `aws` or `gcp` extra.
 
-Cloud jobs use their runtime identity to write the configured object. The Terraform examples provision private, encrypted buckets and scope the writer to the snapshot object. They do not grant a downstream reader, configure a SubImage integration, or deploy a Cartography importer. Configure your chosen consumer separately when a compatible importer is available.
+Cloud jobs use their runtime identity to write the configured object. The Terraform examples provision private, encrypted buckets and scope the writer to the snapshot object. The [Cartography 1Password module](https://docs.cartography.dev/modules/onepassword/index.html) and [Subimage](https://docs.subimage.io/docs/modules/onepassword/setup) read these snapshots. Grant your consumer read access: the Cloud Run example takes `snapshot_readers`, and the ECS README describes the S3 grant.
 
 ## Scheduling and failure behavior
 

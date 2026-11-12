@@ -56,6 +56,13 @@ resource "google_storage_bucket_iam_member" "snapshot_writer" {
   }
 }
 
+resource "google_storage_bucket_iam_member" "snapshot_reader" {
+  for_each = toset(var.snapshot_readers)
+  bucket   = google_storage_bucket.snapshots.name
+  role     = "roles/storage.objectViewer"
+  member   = each.value
+}
+
 resource "google_secret_manager_secret_iam_member" "token_reader" {
   project   = var.project_id
   secret_id = var.op_secret_id

@@ -33,4 +33,4 @@ kubectl get job onepassword-collector-manual -n subimage-collectors
 
 Choose a new manual job name for later runs and avoid starting it during a scheduled execution. Confirm the Job completed and use a separately authorized S3 reader to inspect snapshot `collected_at` and vault scope. Manual Jobs are not protected by the CronJob's `Forbid` concurrency policy.
 
-The CronJob forbids overlapping scheduled runs, disables retries, and terminates executions after 30 minutes. Collection failures leave the prior snapshot untouched. Monitor failed Jobs and object freshness. No downstream reader or Cartography importer is configured by this example.
+The CronJob forbids overlapping scheduled runs, disables retries, and terminates executions after 30 minutes. Collection failures leave the prior snapshot untouched. Monitor failed Jobs and object freshness. This example grants no reader. Give your consumer, such as Cartography or Subimage, read access to the snapshot object separately.

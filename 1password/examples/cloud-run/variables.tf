@@ -102,6 +102,12 @@ variable "schedule" {
   default     = "0 2 * * *"
 }
 
+variable "snapshot_readers" {
+  type        = list(string)
+  description = "IAM members, such as a consumer's service account or workload identity principal, granted read access to the snapshot bucket."
+  default     = []
+}
+
 variable "include_titles" {
   type        = bool
   description = "Include vault names and item titles, which can contain sensitive text."

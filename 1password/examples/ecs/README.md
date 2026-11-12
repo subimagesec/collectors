@@ -27,7 +27,7 @@ terraform apply collector.tfplan
 
 `op_secret_arn` and `op_secret_version_id` are references only. The ECS execution role retrieves that version and injects it as `OP_SERVICE_ACCOUNT_TOKEN`. Terraform never reads the payload. For a customer-managed KMS key, supply `op_secret_kms_key_arn` and ensure its key policy permits the execution role. Update the version ID and apply after rotating the token externally.
 
-The task role can only `s3:PutObject` at the configured snapshot key. The execution role pulls the image, delivers logs, and retrieves the one configured secret. The scheduler can launch only this task definition in this cluster and pass only its two roles. The bucket blocks public access, disables ACLs, uses SSE-S3 encryption, and rejects non-TLS requests. No downstream reader is granted access.
+The task role can only `s3:PutObject` at the configured snapshot key. The execution role pulls the image, delivers logs, and retrieves the one configured secret. The scheduler can launch only this task definition in this cluster and pass only its two roles. The bucket blocks public access, disables ACLs, uses SSE-S3 encryption, and rejects non-TLS requests. No reader is granted access by this example.
 
 The scheduler execution role's `aws:SourceArn` condition uses the schedule-group ARN, as required by [AWS's confused-deputy guidance](https://docs.aws.amazon.com/scheduler/latest/UserGuide/cross-service-confused-deputy-prevention.html).
 
@@ -37,7 +37,7 @@ Use the ECS console's **Run task** action with the generated cluster/task defini
 
 Check the snapshot's `collected_at` and configured vault scope. A successful EventBridge delivery means that ECS accepted the task, not that 1Password collection succeeded. Monitor stopped task exit codes and snapshot freshness separately.
 
-The default schedule is daily at 02:00 UTC. Automatic scheduler retries are disabled, and tasks exit after a collection. There is no cross-execution lock or ECS execution timeout in this example; use a schedule longer than the maximum observed runtime and avoid overlapping manual launches. No downstream Cartography importer is configured.
+The default schedule is daily at 02:00 UTC. Automatic scheduler retries are disabled, and tasks exit after a collection. There is no cross-execution lock or ECS execution timeout in this example; use a schedule longer than the maximum observed runtime and avoid overlapping manual launches. To let a consumer read the snapshot, give its IAM role `s3:ListBucket` on the bucket and `s3:GetObject` on the snapshot key. A role in this account needs only its own IAM policy; a role in another account also needs a bucket policy grant.
 
 ## Configuration validation
 

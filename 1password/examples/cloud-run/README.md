@@ -50,7 +50,7 @@ gcloud run jobs execute onepassword-collector \
 
 Use your configured name/project/region if changed. Confirm the execution succeeded and inspect the configured GCS object using a separately authorized reader identity. Its `collected_at` should reflect the completed run. Monitor job failures and snapshot freshness: a successful scheduler request proves launch, not collection success.
 
-The default schedule is daily at 02:00 UTC, with a 30-minute execution timeout and no retries. The `schedule` input accepts [Cloud Scheduler unix-cron or groc syntax](https://docs.cloud.google.com/scheduler/docs/configuring/cron-job-schedules), such as `0 2 * * *` or `every 48 hours`; the Cloud Scheduler API validates the expression. Choose a schedule longer than collection time and avoid overlapping manual invocations. No downstream reader or Cartography importer is configured.
+The default schedule is daily at 02:00 UTC, with a 30-minute execution timeout and no retries. The `schedule` input accepts [Cloud Scheduler unix-cron or groc syntax](https://docs.cloud.google.com/scheduler/docs/configuring/cron-job-schedules), such as `0 2 * * *` or `every 48 hours`; the Cloud Scheduler API validates the expression. Choose a schedule longer than collection time and avoid overlapping manual invocations. To let a consumer such as Cartography or Subimage read the snapshot, list its principal in `snapshot_readers`. Each one gets `roles/storage.objectViewer` on the bucket.
 
 ## Configuration validation
 
