@@ -1,4 +1,4 @@
-# 1Password Collector
+# 1Password collector
 
 A customer-run collector that exports a JSON snapshot of selected 1Password vaults, their access grants, group memberships, and item metadata for security graphs.
 
@@ -44,7 +44,7 @@ For Google Cloud Storage, install `--extra gcp` and use `gs://example-collector-
 
 - Coverage is limited to the explicitly configured vaults. It is not a claim of account-wide vault coverage.
 - Archived items are included. The snapshot records its vault scope, collection time, and schema version; see the [format and ingestion contract](docs/format.md) and [JSON schema](schemas/v1.json).
-- User names, email addresses, and states are included when provided, along with group names and memberships. The authenticated service account can have only an ID and type if it is absent from the directory. Vault names and item titles are omitted unless you pass `--include-titles`. Titles can contain sensitive free text. Keep the output private; the local `output/` directory is gitignored.
+- User names, email addresses, and states are included when provided, along with group names and memberships. The authenticated service account can have only an ID and type if it is absent from the directory. Vault names and item titles are included; pass `--omit-titles` to leave them out. Titles can contain sensitive free text. Keep the output private; the local `output/` directory is gitignored.
 - The collector uses CLI metadata commands and SDK vault-accessor reads with an explicit output schema. It does not fetch item contents, export secret values, modify access, or infer secret-read permission from vault ownership/management alone. Grants retain known SDK permission names in lowercase and the complete `permissions_bitmask`, including unknown bits.
 - A collection failure does not publish a partial snapshot or replace an existing output. A successful run replaces the selected file or object with one complete snapshot. A publication failure returns a nonzero exit status.
 
@@ -59,7 +59,7 @@ docker run --rm onepassword-collector:local --help
 
 Run as the image's configured user (UID/GID `10001:10001`) and make any output volume writable by that user. The 1Password CLI requires a matching Unix user entry; overriding the container user with an arbitrary numeric UID can prevent authentication.
 
-Component releases use tags such as `1password/v0.1.0` and publish to `ghcr.io/subimagesec/collectors/1password`. Until a release is available, publish your reviewed build to a registry you control. Use its immutable image digest for deployment. Containerized CLI authentication is separate from your desktop session; a successful local desktop run does not prove that an unattended token will work.
+Releases publish public AMD64 and ARM64 images to `ghcr.io/subimagesec/collectors/1password`, tagged with the version, such as `0.1.0`. Pin the image by digest in scheduled deployments, or mirror it to a registry you control. Containerized CLI authentication is separate from your desktop session; a successful local desktop run does not prove that an unattended token will work.
 
 Maintainers create release tags from `main`. The release workflow verifies that the tagged commit is on `main`, its version matches `pyproject.toml`, and Python/container checks pass before publishing. Release tags cannot be moved or deleted.
 
@@ -72,6 +72,29 @@ After validating authentication, read the [deployment guide](docs/deployment.md)
 | Cloud Run Job + Cloud Scheduler | GCS | [Terraform](examples/cloud-run/README.md) |
 | ECS Fargate + EventBridge Scheduler | S3 | [Terraform](examples/ecs/README.md) |
 | Kubernetes CronJob | S3 | [Manifest](examples/kubernetes/README.md) |
+
+## Use with Subimage
+
+[Subimage](https://subimage.io) reads the snapshot from your bucket. The shortest setup:
+
+1. Create a read-only 1Password service account for the vaults to cover, and store its token without the trailing newline that `--raw` prints. For S3, store it in AWS Secrets Manager:
+
+   ```sh
+   op service-account create "Subimage collector" \
+     --vault <vault-id>:read_items --vault <another-vault-id>:read_items --raw \
+     | tr -d '\n' \
+     | aws secretsmanager create-secret --name onepassword-collector-token \
+         --secret-string file:///dev/stdin
+   ```
+
+   For GCS, end the pipeline with `gcloud secrets create onepassword-collector-token --data-file=-` instead.
+
+2. Deploy a scheduled example:
+   - **S3:** the [ECS example](examples/ecs/README.md). Set `subimage_tenant_role_arn` and `subimage_external_id` from Subimage's 1Password setup page, and the example also creates the read-only role Subimage assumes.
+   - **GCS:** the [Cloud Run example](examples/cloud-run/README.md). Add Subimage's GCP principal to `snapshot_readers`.
+3. In Subimage, open **Modules** → **1Password** and enter the example's outputs: `subimage_onepassword_source`, plus `subimage_onepassword_aws_account_id` for S3.
+
+See the [Subimage 1Password setup guide](https://docs.subimage.io/docs/modules/onepassword/setup) for details.
 
 ## Development
 

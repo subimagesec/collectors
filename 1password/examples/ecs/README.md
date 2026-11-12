@@ -6,10 +6,19 @@ Use a 1Password service account with **Read Items** access to the intended vault
 
 ## Prerequisites
 
-- Terraform 1.5+ and approved AWS CLI credentials for resource/IAM creation. No stored cloud key is passed to the job.
+- Terraform 1.9+ and approved AWS CLI credentials for resource/IAM creation. No stored cloud key is passed to the job.
 - Existing subnets in one VPC with IPv4 HTTPS egress to 1Password, the image registry, Secrets Manager, S3, and CloudWatch Logs. Private subnets need NAT for public endpoints; alternatively use public subnets and set `assign_public_ip = true`. This example provisions no routes or NAT gateway and exposes no inbound port.
-- An existing Secrets Manager secret in the deployment account/region. Its selected version must contain the raw token string, not a JSON wrapper. Populate it through your existing secret-management workflow.
-- A Linux AMD64 collector image accessible to ECS. A same-account ECR repository works with the provided task execution policy. Cross-account/private registries need their own pull authorization. Use an immutable image digest; placeholders are not released images.
+- An existing Secrets Manager secret in the deployment account/region. Its selected version must contain the raw token string, not a JSON wrapper. For example:
+
+  ```sh
+  op service-account create "Subimage collector" \
+    --vault <vault-id>:read_items --vault <another-vault-id>:read_items --raw \
+    | tr -d '\n' \
+    | aws secretsmanager create-secret --name onepassword-collector-token \
+        --secret-string file:///dev/stdin
+  ```
+
+- The collector image, pinned by digest. ECS pulls the public `ghcr.io/subimagesec/collectors/1password` release directly over the task's HTTPS egress, or you can mirror it to a same-account ECR repository.
 - Your expected account UUID, explicit vault UUIDs, and a globally unique bucket name.
 
 ## Deploy
@@ -37,7 +46,18 @@ Use the ECS console's **Run task** action with the generated cluster/task defini
 
 Check the snapshot's `collected_at` and configured vault scope. A successful EventBridge delivery means that ECS accepted the task, not that 1Password collection succeeded. Monitor stopped task exit codes and snapshot freshness separately.
 
-The default schedule is daily at 02:00 UTC. Automatic scheduler retries are disabled, and tasks exit after a collection. There is no cross-execution lock or ECS execution timeout in this example; use a schedule longer than the maximum observed runtime and avoid overlapping manual launches. To let a consumer read the snapshot, give its IAM role `s3:ListBucket` on the bucket and `s3:GetObject` on the snapshot key. A role in this account needs only its own IAM policy; a role in another account also needs a bucket policy grant.
+The default schedule is daily at 02:00 UTC. Automatic scheduler retries are disabled, and tasks exit after a collection. There is no cross-execution lock or ECS execution timeout in this example; use a schedule longer than the maximum observed runtime and avoid overlapping manual launches.
+
+## Use with Subimage
+
+Set `subimage_tenant_role_arn` and `subimage_external_id` to the values on Subimage's 1Password setup page. The example then creates `SubImageOnePasswordRole`, which trusts only that role with that external ID and can only list and read the snapshot prefix. After you apply, enter these outputs in Subimage's 1Password module:
+
+| Output | Subimage field |
+| --- | --- |
+| `subimage_onepassword_source` | `onepassword_source` |
+| `subimage_onepassword_aws_account_id` | `onepassword_aws_account_id` |
+
+For another consumer, give its IAM role `s3:ListBucket` on the bucket and `s3:GetObject` on the snapshot key. A role in this account needs only its own IAM policy; a role in another account also needs a bucket policy grant.
 
 ## Configuration validation
 

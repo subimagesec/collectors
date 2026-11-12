@@ -39,7 +39,7 @@ Read Items permits access to secret values even though this collector does not r
 Use the exact credential and CLI version intended for deployment. Existing vaults and items are sufficient; a separate synthetic vault is optional. Follow [Run locally](../README.md#run-locally) with explicit account and vault UUIDs and a local output path.
 
 - Validate the result against [schemas/v1.json](../schemas/v1.json), including formats. Check the expected account, complete status, configured vault set, and item/vault/user/group references.
-- Confirm vault names and item titles are absent without `--include-titles`. If you use an optional synthetic canary item, confirm its UUID appears and its fake secret marker does not. Do not retrieve real secrets for this check.
+- Confirm vault names and item titles are present, and absent with `--omit-titles`. If you use an optional synthetic canary item, confirm its UUID appears and its fake secret marker does not. Do not retrieve real secrets for this check.
 - Repeat the run with the same scope and output. Check for a new snapshot ID and later collection time, with one complete snapshot replacing the previous file.
 - Save a copy of the output, then use a deliberately incorrect, valid-format expected account UUID. Expect a nonzero exit and byte-for-byte unchanged output.
 
@@ -49,7 +49,7 @@ Keep snapshots and raw provider responses private. A local run verifies that cre
 
 Set the expected 26-character account UUID with `--account-id`, and explicitly list each vault UUID with `--vault-id`. Account identity is checked before collection; the token's access and the configured vault IDs both limit coverage.
 
-The snapshot's scope is the configured vault set, not every vault in the account. Grant `permissions` contain known SDK flag names in lowercase; `permissions_bitmask` preserves the complete integer, including unknown bits. A management or ownership grant does not by itself establish `read_items`. Archived items are included. Vault names and item titles require `--include-titles`.
+The snapshot's scope is the configured vault set, not every vault in the account. Grant `permissions` contain known SDK flag names in lowercase; `permissions_bitmask` preserves the complete integer, including unknown bits. A management or ownership grant does not by itself establish `read_items`. Archived items are included. `--omit-titles` leaves out vault names and item titles.
 
 The authenticated service account can be absent from the user directory. In that case, its identity can contain only the ID verified through `op whoami` and its service-account type. Name, email, and state are included only when provided; missing metadata is not fabricated.
 

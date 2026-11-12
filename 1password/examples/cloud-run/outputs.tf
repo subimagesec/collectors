@@ -4,11 +4,16 @@ output "job_name" {
 }
 
 output "output_uri" {
-  description = "Destination of successful snapshots; no consumer access is provisioned."
+  description = "Destination of successful snapshots."
   value       = "gs://${google_storage_bucket.snapshots.name}/${var.output_object}"
 }
 
 output "runtime_service_account" {
   description = "Identity used to retrieve the token and write the snapshot."
   value       = google_service_account.runtime.email
+}
+
+output "subimage_onepassword_source" {
+  description = "Value for onepassword_source in Subimage. Add Subimage's GCP principal to snapshot_readers, which grants read access to the whole snapshot bucket."
+  value       = "gs://${google_storage_bucket.snapshots.name}/${dirname(var.output_object) == "." ? "" : "${dirname(var.output_object)}/"}"
 }

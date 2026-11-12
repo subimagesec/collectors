@@ -18,10 +18,10 @@ The snapshot contains:
 | --- | --- |
 | `users`, `groups` | Observed identity metadata; service-account records can omit unavailable name, email, or state |
 | `group_memberships` | Separate `group_id` / `user_id` membership edges |
-| `vaults` | Configured vault IDs; names only with `--include-titles` |
+| `vaults` | Configured vault IDs and names; names absent with `--omit-titles` |
 | `vault_user_grants` | Direct `user_id` / `vault_id` grants, known permission names, and raw permission bitmasks |
 | `vault_group_grants` | `group_id` / `vault_id` grants, known permission names, and raw permission bitmasks |
-| `items` | Item IDs, owning vault IDs, and available allowlisted metadata; titles only with `--include-titles` |
+| `items` | Item IDs, owning vault IDs, and available allowlisted metadata; titles absent with `--omit-titles` |
 
 Keep direct grants and group-derived access separate. A user can have multiple access paths to the same vault. Resolve a group path by joining `group_memberships` with `vault_group_grants`, retaining that provenance. Do not interpret `manage_vault`, `recover_vault`, group ownership, or administrative status as an explicit `read_items` grant. Account/user status and additional 1Password policy can also affect effective access.
 

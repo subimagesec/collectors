@@ -185,7 +185,7 @@ def test_snapshot_is_scoped_and_contains_only_allowlisted_metadata(transport, ca
     ]
     assert snapshot["groups"] == [{"id": GROUP, "name": "Engineering"}]
     assert snapshot["group_memberships"] == [{"group_id": GROUP, "user_id": USER}]
-    assert snapshot["vaults"] == [{"id": VAULT}]
+    assert snapshot["vaults"] == [{"id": VAULT, "name": "Engineering"}]
     assert snapshot["vault_user_grants"] == [
         {
             "vault_id": VAULT,
@@ -212,6 +212,7 @@ def test_snapshot_is_scoped_and_contains_only_allowlisted_metadata(transport, ca
         {
             "id": ITEM,
             "vault_id": VAULT,
+            "title": "Example credential",
             "category": "LOGIN",
             "state": "ARCHIVED",
             "created_at": "2026-01-01T20:00:00Z",
@@ -228,8 +229,8 @@ def test_snapshot_is_scoped_and_contains_only_allowlisted_metadata(transport, ca
     )
 
 
-def test_titles_require_explicit_opt_in(transport):
-    snapshot = collect([VAULT], account_id=ACCOUNT, include_titles=True)
+def test_titles_are_collected_by_default(transport):
+    snapshot = collect([VAULT], account_id=ACCOUNT)
     assert snapshot["vaults"] == [{"id": VAULT, "name": "Engineering"}]
     assert snapshot["items"][0]["title"] == "Example credential"
     assert CANARY not in json.dumps(snapshot)
@@ -477,7 +478,7 @@ def test_successfully_observed_empty_vault_is_explicit(transport):
     responses[("item", "list", f"--vault={VAULT}", "--include-archive")] = []
     snapshot = collect([VAULT], account_id=ACCOUNT)
     assert snapshot["items"] == []
-    assert snapshot["vaults"] == [{"id": VAULT}]
+    assert snapshot["vaults"] == [{"id": VAULT, "name": "Engineering"}]
     assert snapshot["scope"]["vault_ids"] == [VAULT]
 
 
@@ -750,3 +751,14 @@ def test_other_service_account_grants_record_id_and_type(transport):
 
     assert {"id": OTHER_ID, "type": "SERVICE_ACCOUNT"} in snapshot["users"]
     assert OTHER_ID in {grant["user_id"] for grant in snapshot["vault_user_grants"]}
+
+
+def test_surrounding_whitespace_in_the_token_is_ignored(transport, monkeypatch):
+    _, calls = transport
+    monkeypatch.setenv("OP_SERVICE_ACCOUNT_TOKEN", f" {CANARY}\n")
+
+    collect([VAULT], account_id=ACCOUNT)
+
+    assert {options["env"]["OP_SERVICE_ACCOUNT_TOKEN"] for _, options in calls} == {
+        CANARY
+    }

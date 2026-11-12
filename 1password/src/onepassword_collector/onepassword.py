@@ -208,7 +208,7 @@ def collect(
     *,
     account_id: str,
     op_path: str = "op",
-    include_titles: bool = False,
+    include_titles: bool = True,
 ) -> dict[str, Any]:
     expected_account_id = _identifier(account_id)
     if not isinstance(vault_ids, list) or not vault_ids:
@@ -220,9 +220,12 @@ def collect(
         raise CollectorError("include_titles must be a boolean.")
 
     client = OpClient(op_path)
-    token = client.environment.get("OP_SERVICE_ACCOUNT_TOKEN")
+    # `op service-account create --raw` and many secret stores end the token
+    # with a newline. The CLI tolerates it but the SDK rejects it.
+    token = client.environment.get("OP_SERVICE_ACCOUNT_TOKEN", "").strip()
     if not token:
         raise CollectorError("OP_SERVICE_ACCOUNT_TOKEN is required.")
+    client.environment["OP_SERVICE_ACCOUNT_TOKEN"] = token
     identity = _object(client.read(["whoami"], "account identity"))
     actual_account_id = _identifier(identity.get("account_uuid"))
     authenticated_user_id = _identifier(identity.get("user_uuid"))

@@ -6,7 +6,7 @@ locals {
     ["--account-id", var.account_id],
     flatten([for id in var.vault_ids : ["--vault-id", id]]),
     ["--output", "s3://${var.bucket_name}/${var.output_object}"],
-    var.include_titles ? ["--include-titles"] : [],
+    var.include_titles ? [] : ["--omit-titles"],
   )
   task_assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -273,4 +273,50 @@ resource "aws_scheduler_schedule" "collector" {
     aws_iam_role_policy_attachment.execution,
     aws_vpc_security_group_egress_rule.https,
   ]
+}
+
+# Optional read access for Subimage. The role name, trust, and external ID match
+# what Subimage assumes for 1Password sources.
+locals {
+  snapshot_prefix = dirname(var.output_object) == "." ? "" : "${dirname(var.output_object)}/"
+}
+
+resource "aws_iam_role" "subimage_reader" {
+  count = var.subimage_tenant_role_arn == null ? 0 : 1
+  name  = "SubImageOnePasswordRole"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect    = "Allow"
+      Principal = { AWS = var.subimage_tenant_role_arn }
+      Action    = "sts:AssumeRole"
+      Condition = { StringEquals = { "sts:ExternalId" = var.subimage_external_id } }
+    }]
+  })
+}
+
+resource "aws_iam_role_policy" "subimage_reader" {
+  count = var.subimage_tenant_role_arn == null ? 0 : 1
+  name  = "read-onepassword-snapshots"
+  role  = aws_iam_role.subimage_reader[0].id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "ListSnapshots"
+        Effect    = "Allow"
+        Action    = "s3:ListBucket"
+        Resource  = aws_s3_bucket.snapshots.arn
+        Condition = { StringLike = { "s3:prefix" = "${local.snapshot_prefix}*" } }
+      },
+      {
+        Sid      = "ReadSnapshots"
+        Effect   = "Allow"
+        Action   = "s3:GetObject"
+        Resource = "${aws_s3_bucket.snapshots.arn}/${local.snapshot_prefix}*"
+      },
+    ]
+  })
 }

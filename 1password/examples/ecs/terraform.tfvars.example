@@ -8,3 +8,7 @@ op_secret_version_id = "00000000-0000-0000-0000-000000000000"
 vpc_id               = "vpc-00000000000000000"
 subnet_ids           = ["subnet-00000000000000000"]
 bucket_name          = "example-collector-snapshots-replace-me"
+
+# Optional: let Subimage read the snapshot. Copy both values from Subimage's 1Password setup page.
+# subimage_tenant_role_arn = "arn:aws:iam::123456789012:role/acme-subimage-readonly"
+# subimage_external_id     = "subimage-onepassword-acme"
