@@ -11,7 +11,7 @@ requires-python = ">=3.12"
 license = "Apache-2.0"
 license-files = ["LICENSE"]
 authors = [{ name = "SubImage" }]
-dependencies = ["onepassword-sdk==0.4.1"]
+dependencies = ["onepassword-sdk==0.4.2"]
 
 [project.urls]
 Homepage = "https://github.com/subimagesec/collectors"
@@ -25,7 +25,7 @@ aws = ["boto3>=1.40,<2"]
 gcp = ["google-cloud-storage>=3.3,<4"]
 
 [dependency-groups]
-dev = ["pytest>=8.4,<10", "jsonschema>=4.25,<5", "ruff==0.15.12"]
+dev = ["pytest>=8.4,<10", "jsonschema>=4.25,<5", "ruff==0.17.3"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/onepassword_collector"]
