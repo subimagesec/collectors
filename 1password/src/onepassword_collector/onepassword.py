@@ -1,6 +1,7 @@
 import json
 import os
 import subprocess
+from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 from typing import Any
 from uuid import uuid4
@@ -11,6 +12,10 @@ from onepassword_collector.validation import identifier as _identifier
 from onepassword_collector.vault_access import collect_vault_access
 
 COMMAND_TIMEOUT_SECONDS = 60
+# Independent per-group and per-vault CLI reads run concurrently. Each `op`
+# process authenticates on its own, so a small pool cuts wall time on large
+# accounts without approaching 1Password's service account rate limits.
+READ_CONCURRENCY = 4
 
 
 class NotAUserError(CollectorError):
@@ -131,8 +136,6 @@ class OpClient:
                 object_pairs_hook=_json_object,
                 parse_constant=_reject_json_constant,
             )
-        except CollectorError:
-            raise
         except (ValueError, RecursionError):
             raise CollectorError(
                 f"1Password {operation} returned invalid JSON."
@@ -246,19 +249,30 @@ def collect(
 
     groups: list[dict[str, Any]] = []
     group_memberships: list[dict[str, str]] = []
-    for group_id, raw in sorted(raw_groups.items()):
-        groups.append({"id": group_id, "name": _text(raw.get("name"), "group name")})
+
+    def add_group(group_id: str, name: str, members: dict[str, dict[str, Any]]) -> None:
+        groups.append({"id": group_id, "name": name})
+        for user_id, raw_member in sorted(members.items()):
+            _include_referenced_user(users, user_id, raw_member)
+            group_memberships.append({"group_id": group_id, "user_id": user_id})
+
+    def group_members(group_id: str) -> dict[str, dict[str, Any]]:
         raw_members = client.read(
             ["group", "user", "list", group_id], "group membership"
         )
         # The CLI returns JSON null for groups with no members.
-        members = _records(
-            [] if raw_members is None else raw_members,
-            user_ids=True,
-        )
-        for user_id, raw_member in sorted(members.items()):
-            _include_referenced_user(users, user_id, raw_member)
-            group_memberships.append({"group_id": group_id, "user_id": user_id})
+        return _records([] if raw_members is None else raw_members, user_ids=True)
+
+    group_names = {
+        group_id: _text(raw.get("name"), "group name")
+        for group_id, raw in sorted(raw_groups.items())
+    }
+    with ThreadPoolExecutor(max_workers=READ_CONCURRENCY) as pool:
+        listed_members = list(pool.map(group_members, group_names))
+    for (group_id, name), members in zip(
+        group_names.items(), listed_members, strict=True
+    ):
+        add_group(group_id, name, members)
 
     user_grants, group_grants = collect_vault_access(requested_vault_ids, token)
     for grant in user_grants:
@@ -281,36 +295,30 @@ def collect(
             if _record_id(raw, user_ids=False) != group_id:
                 raise CollectorError("1Password returned a different group identity.")
             raw_groups[group_id] = raw
-            groups.append(
-                {"id": group_id, "name": _text(raw.get("name"), "group name")}
+            name = _text(raw.get("name"), "group name")
+            add_group(group_id, name, group_members(group_id))
+
+    def vault_items(vault_id: str) -> dict[str, dict[str, Any]]:
+        return _records(
+            client.read(
+                ["item", "list", f"--vault={vault_id}", "--include-archive"],
+                "item listing",
             )
-            raw_members = client.read(
-                ["group", "user", "list", group_id], "group membership"
-            )
-            for user_id, member in sorted(
-                _records(
-                    [] if raw_members is None else raw_members, user_ids=True
-                ).items()
-            ):
-                _include_referenced_user(users, user_id, member)
-                group_memberships.append({"group_id": group_id, "user_id": user_id})
+        )
+
+    with ThreadPoolExecutor(max_workers=READ_CONCURRENCY) as pool:
+        vault_item_lists = list(pool.map(vault_items, requested_vault_ids))
 
     vaults: list[dict[str, str]] = []
     items: list[dict[str, Any]] = []
     seen_item_ids: set[str] = set()
-    for vault_id in requested_vault_ids:
+    for vault_id, raw_items in zip(requested_vault_ids, vault_item_lists, strict=True):
         vault = {"id": vault_id}
         if include_titles:
             vault["name"] = _text(
                 readable_vaults[vault_id].get("name"), "vault name", allow_empty=True
             )
         vaults.append(vault)
-        raw_items = _records(
-            client.read(
-                ["item", "list", f"--vault={vault_id}", "--include-archive"],
-                "item listing",
-            )
-        )
         for item_id, raw in sorted(raw_items.items()):
             if item_id in seen_item_ids:
                 raise CollectorError("An item appeared in more than one vault.")
