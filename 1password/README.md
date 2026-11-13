@@ -35,10 +35,10 @@ uv sync --frozen --extra aws
 uv run onepassword-collector \
   --account-id aaaaaaaaaaaaaaaaaaaaaaaaaa \
   --vault-id bbbbbbbbbbbbbbbbbbbbbbbbbb \
-  --output s3://example-collector-snapshots/onepassword/snapshot.json
+  --output s3://example-onepassword-snapshots/onepassword/snapshot.json
 ```
 
-For Google Cloud Storage, install `--extra gcp` and use `gs://example-collector-snapshots/onepassword/snapshot.json`. Use workload identity for scheduled jobs, or your approved local cloud authentication. No cloud access key is required by the collector's interface.
+For Google Cloud Storage, install `--extra gcp` and use `gs://example-onepassword-snapshots/onepassword/snapshot.json`. Use workload identity for scheduled jobs, or your approved local cloud authentication. No cloud access key is required by the collector's interface.
 
 ## What the snapshot means
 

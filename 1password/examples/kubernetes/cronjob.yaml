@@ -50,7 +50,7 @@ spec:
                 - --vault-id
                 - bbbbbbbbbbbbbbbbbbbbbbbbbb
                 - --output
-                - s3://example-collector-snapshots/onepassword/snapshot.json
+                - s3://example-onepassword-snapshots/onepassword/snapshot.json
               env:
                 - name: OP_SERVICE_ACCOUNT_TOKEN
                   valueFrom:

@@ -42,6 +42,12 @@ updates:
     open-pull-requests-limit: 1
     labels:
       - "dependencies"
+    # A new Python minor release ships before compiled dependencies such as
+    # pydantic-core publish wheels for it, so the image build fails. Move to a
+    # new minor version by hand once its wheels exist.
+    ignore:
+      - dependency-name: "python"
+        update-types: ["version-update:semver-minor"]
     groups:
       all-images:
         patterns:
