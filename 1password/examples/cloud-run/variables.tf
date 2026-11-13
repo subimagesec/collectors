@@ -71,7 +71,7 @@ variable "op_secret_version" {
 
 variable "bucket_name" {
   type        = string
-  description = "Globally unique name for a new private snapshot bucket."
+  description = "Globally unique name for a new private snapshot bucket, such as `<company>-onepassword-snapshots`."
 
   validation {
     condition = (
