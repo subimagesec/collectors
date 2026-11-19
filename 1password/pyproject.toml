@@ -25,7 +25,7 @@ aws = ["boto3>=1.40,<2"]
 gcp = ["google-cloud-storage>=3.3,<4"]
 
 [dependency-groups]
-dev = ["pytest>=8.4,<10", "jsonschema>=4.25,<5", "ruff==0.17.3"]
+dev = ["pytest>=8.4,<10", "jsonschema>=4.25,<5", "ruff==0.17.4"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/onepassword_collector"]
